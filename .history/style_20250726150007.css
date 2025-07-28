@@ -1,0 +1,560 @@
+/* General Styles */
+:root {
+  --primary-color: #4CAF50;
+  /* Green */
+  --secondary-color: #f0f0f0;
+  /* Light Gray */
+  --text-color: #333;
+  --header-bg: #fff;
+  --border-color: #ddd;
+  --button-hover-bg: #45a049;
+  --button-text-color: #fff;
+  --navbar-height: 60px;
+  /* Tentukan tinggi navbar */
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Untuk smooth scrolling saat klik link anchor */
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  /* Tambahkan padding-top untuk mengimbangi navbar fixed */
+  padding-top: var(--navbar-height);
+  background-color: #f9f9f9;
+  color: var(--text-color);
+  line-height: 1.6;
+  transition: margin-right 0.3s ease;
+  /* Untuk animasi dorong konten saat menu terbuka */
+}
+
+body.menu-open {
+  overflow: hidden;
+  /* Mencegah scrolling latar belakang saat menu terbuka */
+}
+
+.container {
+  width: 90%;
+  max-width: 960px;
+  /* Lebar maksimum disesuaikan untuk fokus wireframe */
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+/* Navbar */
+.navbar {
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px 0;
+  position: fixed;
+  /* Membuat navbar tetap di atas */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  height: var(--navbar-height);
+  /* Tentukan tinggi navbar */
+  display: flex;
+  /* Untuk centering konten di dalamnya */
+  align-items: center;
+  /* Untuk centering konten di dalamnya */
+}
+
+.navbar .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 90%;
+  /* Pastikan container di dalam navbar juga responsif */
+  max-width: 960px;
+}
+
+.navbar .logo {
+  font-weight: bold;
+  font-size: 1.2em;
+  color: var(--primary-color);
+  text-decoration: none;
+  /* Hapus underline pada link logo */
+}
+
+.nav-menu .menu-toggle {
+  display: none;
+  /* Hidden by default for larger screens */
+  background: none;
+  border: none;
+  font-size: 1.8em;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  /* Gaya untuk menu overlay */
+  position: fixed;
+  top: 0;
+  right: -300px;
+  /* Sembunyikan di luar layar */
+  width: 300px;
+  height: 100%;
+  background-color: var(--header-bg);
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+  flex-direction: column;
+  padding-top: 60px;
+  /* Ruang untuk tombol tutup */
+  transition: right 0.3s ease-in-out;
+  z-index: 999;
+  /* Di bawah navbar tapi di atas konten */
+}
+
+.nav-list.active {
+  right: 0;
+  /* Tampilkan menu */
+}
+
+.nav-list li {
+  margin: 10px 20px;
+  /* Padding untuk setiap item menu */
+}
+
+.nav-list a {
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 500;
+  transition: color 0.3s ease;
+  display: block;
+  /* Agar seluruh area li bisa diklik */
+  padding: 10px 0;
+}
+
+.nav-list a:hover {
+  color: var(--primary-color);
+}
+
+/* Tombol tutup menu */
+.close-menu-item {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  margin: 0;
+  /* Override default li margin */
+}
+
+.close-menu {
+  background: none;
+  border: none;
+  font-size: 2em;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+/* Page Sections */
+.page-section {
+  padding: 40px 0;
+  min-height: calc(100vh - var(--navbar-height) - 80px);
+  /* Adjust based on header/footer height */
+  box-sizing: border-box;
+  background-color: #fff;
+  /* Background putih seperti wireframe */
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  padding: 30px;
+}
+
+h1,
+h2 {
+  color: var(--primary-color);
+  margin-bottom: 15px;
+}
+
+h1 {
+  font-size: 2.2em;
+}
+
+h2 {
+  font-size: 1.8em;
+}
+
+p {
+  margin-bottom: 15px;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s ease;
+  text-decoration: none;
+  /* Untuk anchor tags styled as buttons */
+  display: inline-block;
+  text-align: center;
+}
+
+.primary-btn {
+  background-color: var(--primary-color);
+  color: var(--button-text-color);
+}
+
+.primary-btn:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.secondary-btn {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.secondary-btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* Home Section Specific */
+#home .hero-content {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+#home .triangle-icon {
+  font-size: 3em;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+}
+
+#home .why-important {
+  padding: 30px 0;
+}
+
+#home .why-important h2 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.reason-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 15px;
+}
+
+.reason-item .icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--secondary-color);
+  padding: 5px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.reason-item h3 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  font-size: 1.1em;
+}
+
+.reason-item p {
+  font-size: 0.9em;
+  margin-bottom: 0;
+}
+
+/* Our Solution Section */
+.solution-details ul {
+  list-style: disc;
+  margin-left: 20px;
+  margin-bottom: 20px;
+}
+
+.solution-details img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+/* Live Map Teaser Section */
+.map-teaser-content {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 20px auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.map-teaser-content .map-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.map-overlay-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(76, 175, 80, 0.8);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 1.1em;
+  text-align: center;
+}
+
+.map-teaser-content .primary-btn {
+  display: block;
+  width: calc(100% - 40px);
+  margin: 20px auto;
+}
+
+/* Mari Berkolaborasi Section */
+#collaboration h1 {
+  text-align: center;
+  font-size: 2.5em;
+  margin-bottom: 10px;
+}
+
+#collaboration h2 {
+  text-align: center;
+  font-size: 1.8em;
+  margin-bottom: 30px;
+}
+
+#collaboration>p {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+#collaboration .primary-btn {
+  display: block;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+/* Chat Page Specific Styles */
+#chat-page .chat-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #f8f8f8;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+  justify-content: flex-end;
+  /* Agar pesan baru muncul dari bawah */
+}
+
+/* Area pesan chat yang bisa di-scroll */
+.chat-messages {
+  flex-grow: 1;
+  /* Mengisi ruang yang tersedia */
+  overflow-y: auto;
+  /* Mengaktifkan scroll jika pesan melebihi tinggi */
+  padding-right: 10px;
+  /* Sedikit padding untuk scrollbar */
+  display: flex;
+  /* PENTING: Mengaktifkan Flexbox untuk mengatur posisi pesan */
+  flex-direction: column;
+  /* PENTING: Pesan diatur dari atas ke bawah */
+  gap: 10px;
+  /* Jarak antar pesan */
+}
+
+.chat-message {
+  padding: 15px;
+  border-radius: 15px;
+  max-width: 80%;
+  word-wrap: break-word;
+  /* Memastikan teks panjang tidak keluar box */
+}
+
+/* Gaya untuk pesan bot (default, sebelah kiri) */
+.chat-message.bot-message {
+  background-color: #e0f7fa;
+  /* Warna biru muda untuk pesan bot */
+  align-self: flex-start;
+  /* PENTING: Mengatur pesan bot rata kiri */
+}
+
+/* Gaya untuk pesan pengguna (sebelah kanan) */
+.chat-message.user-message {
+  background-color: #DCF8C6;
+  /* Warna hijau muda untuk pesan pengguna */
+  align-self: flex-end;
+  /* PENTING: Mengatur pesan pengguna rata kanan */
+}
+
+.chat-message p {
+  margin-bottom: 5px;
+}
+
+.chat-message ul {
+  list-style: disc;
+  margin-left: 20px;
+  margin-top: 10px;
+}
+
+.chat-input-area {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.chat-input {
+  flex-grow: 1;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 25px;
+  /* Rounded input */
+  font-size: 1em;
+}
+
+.chat-send-btn {
+  background-color: var(--primary-color);
+  color: var(--button-text-color);
+  border: none;
+  border-radius: 25px;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s ease;
+}
+
+.chat-send-btn:hover {
+  background-color: var(--button-hover-bg);
+}
+
+
+/* Footer */
+.footer {
+  background-color: var(--header-bg);
+  border-top: 1px solid var(--border-color);
+  padding: 15px 0;
+  text-align: center;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.footer-icon {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2em;
+  cursor: pointer;
+  color: #666;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+  .navbar .container {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    /* Kembali ke space-between */
+  }
+
+  .navbar .logo {
+    width: auto;
+    /* Biarkan logo menyesuaikan konten */
+    margin-bottom: 0;
+  }
+
+  .nav-menu {
+    width: auto;
+    text-align: right;
+    /* Burger menu di kanan */
+  }
+
+  .nav-menu .menu-toggle {
+    display: block;
+    padding-right: 0;
+    /* Hapus padding kanan */
+  }
+
+  /* Menu overlay akan mengambil alih tampilan */
+  /* Properti untuk .nav-list sudah diatur di luar media query */
+
+  .nav-list.active {
+    right: 0;
+  }
+
+  .nav-list li {
+    margin: 10px 20px;
+  }
+
+  /* Adjust page-section padding for smaller screens */
+  .page-section {
+    padding: 20px;
+  }
+
+  .reason-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.8em;
+  }
+
+  h2 {
+    font-size: 1.4em;
+  }
+
+  .btn {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #collaboration .primary-btn {
+    width: 100%;
+  }
+
+  .chat-input-area {
+    flex-direction: column;
+  }
+
+  .chat-send-btn {
+    width: 100%;
+  }
+}

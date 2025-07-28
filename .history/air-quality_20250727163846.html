@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Greenova AI - Air Quality</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header class="navbar">
+    <div class="container">
+      <a href="chat.html" class="logo">Ask GREENOVA AI 🌲🤖</a>
+      <nav class="nav-menu">
+        <button class="menu-toggle" aria-label="Toggle navigation">&#9776;</button>
+        <ul class="nav-list">
+          <li class="close-menu-item"><button class="close-menu" aria-label="Close navigation">&times;</button></li>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="how-it-works.html">How It Works</a></li>
+          <li><a href="live-map.html">Live Map & Rob. Loc.</a></li>
+          <li><a href="air-quality.html">Air Quality Analysis</a></li>
+          <li><a href="collaboration.html">Collaboration</a></li>
+          <li><a href="donation.html">Donation</a></li>
+          <li><a href="chat.html">Ask GREENOVA AI</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="air-quality" class="page-section">
+      <h2>Air Quality Analysis</h2>
+      <div class="search-bar">
+        <input type="text" placeholder="Search your location here...">
+        <button class="btn search-btn">Search</button>
+      </div>
+      <div class="air-quality-data">
+        <p class="last-updated">Last Updated: <span id="last-updated-time">26 July 2025 09:00 WIB</span></p>
+        <p class="from-sensor">From real time data by GREENOVA (robot in 3-minutes)</p>
+        <div class="aqi-value" id="aqi-value">60</div>
+        <div class="aqi-status" id="aqi-status">Moderate</div>
+        <p class="aqi-note">"We need more Greenova robots. Don't forget to contribute to our clean budget for
+          Indonesia."</p>
+        <ul>
+          <li>Aktivitas luar ruangan bisa dilanjutkan. Namun, jika Anda termasuk kelompok sensitif, seperti penderita
+            asma atau alergi, perhatikan gejala yang mungkin timbul.</li>
+          <li>Kurangi balik untuk membuka jendela dan menghirup ventilasi udara.</li>
+          <li>Waktu baik untuk membuka jendela dan menghirup ventilasi udara.</li>
+        </ul>
+      </div>
+      <a href="index.html" class="btn secondary-btn">Back to main page</a>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-nav">
+        <button class="footer-icon">&#9776;</button>
+        <button class="footer-icon">&#9776;</button>
+        <button class="footer-icon">&#9776;</button>
+      </div>
+      <div class="social-media">
+        <span>Our Social Media</span>
+        <span>Our Contact</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    // Contoh sederhana untuk mengupdate data AQI secara dinamis (opsional, jika tidak ada backend)
+    document.addEventListener('DOMContentLoaded', () => {
+      const aqiValueElement = document.getElementById('aqi-value');
+      const aqiStatusElement = document.getElementById('aqi-status');
+      const lastUpdatedTimeElement = document.getElementById('last-updated-time');
+
+      const updateAQIData = () => {
+        const currentAQI = Math.floor(Math.random() * (150 - 20 + 1)) + 20; // Random AQI
+        let statusText = '';
+        let statusColor = '';
+
+        if (currentAQI <= 50) {
+          statusText = 'Baik';
+          statusColor = '#4CAF50'; // Green
+        } else if (currentAQI <= 100) {
+          statusText = 'Sedang';
+          statusColor = '#FFC107'; // Yellow
+        } else if (currentAQI <= 150) {
+          statusText = 'Tidak Sehat untuk Kelompok Sensitif';
+          statusColor = '#FF9800'; // Orange
+        } else {
+          statusText = 'Tidak Sehat';
+          statusColor = '#F44336'; // Red
+        }
+
+        const now = new Date();
+        const formattedTime = now.toLocaleString('id-ID', {
+          day: '2-digit', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        }) + ' WIB';
+
+        if (aqiValueElement) {
+          aqiValueElement.textContent = currentAQI;
+          aqiValueElement.style.color = statusColor;
+        }
+        if (aqiStatusElement) {
+          aqiStatusElement.textContent = statusText;
+          aqiStatusElement.style.color = statusColor;
+        }
+        if (lastUpdatedTimeElement) {
+          lastUpdatedTimeElement.textContent = formattedTime;
+        }
+      };
+
+      updateAQIData();
+      setInterval(updateAQIData, 30000); // Update every 30 seconds
+    });
+  </script>
+</body>
+
+</html>

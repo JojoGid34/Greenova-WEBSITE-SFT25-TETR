@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Greenova AI - Scrollable Website</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  // Header nya fixes di atas
+  <header class="navbar">
+    <div class="container">
+      // Logo jadi link ke chat page
+      <a href="#chat-page" class="logo">Ask GREENOVA AI</a>
+      <nav class="nav-menu">
+        <button class="menu-toggle" aria-label="Toggle navigation">&#9776;</button>
+        <ul class="nav-list">
+          // Close button untuk menu
+          <li class="close-menu-item"><button class="close-menu" aria-label="Close navigation">&times;</button></li>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#solution">Our Solution</a></li>
+          <li><a href="#live-map-teaser">Live Map Teaser</a></li>
+          <li><a href="#collaboration">Collaboration</a></li>
+          <li><a href="#about-us-simulated">About Us</a></li>
+          <li><a href="#how-it-works-simulated">How It Works</a></li>
+          <li><a href="#live-map-simulated">Live Map & Rob. Loc.</a></li>
+          <li><a href="#air-quality-simulated">Air Quality Analysis</a></li>
+          <li><a href="#collaboration-simulated">Collaboration</a></li>
+          <li><a href="#donation-simulated">Donation</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Home Section (Menumbuhkan Udara Bersih di Daerah Anda & Why this is important for us?) -->
+    <section id="home" class="page-section">
+      <div class="hero-content">
+        <div class="triangle-icon">▲</div>
+        <h1>Menumbuhkan Udara Bersih di Daerah Anda</h1>
+        <p>Mempromosikan GREENOVA, platform robotik cerdas yang membersihkan udara, merawat ruang hijau, dan mengedukasi
+          masyarakat secara bersamaan.</p>
+        <a href="#air-quality-simulated" class="btn primary-btn">Lihat bagaimana kualitas udara di sekitar Anda</a>
+      </div>
+      <div class="why-important">
+        <h2>Why this is important for us?</h2>
+        <div class="reason-item">
+          <img src="https://via.placeholder.com/40" alt="Polusi Udara Icon" class="icon">
+          <div>
+            <h3>Ancaman Polusi Udara</h3>
+            <p>Kualitas udara yang buruk mengancam kesehatan kita.</p>
+          </div>
+        </div>
+        <div class="reason-item">
+          <img src="https://via.placeholder.com/40" alt="RTH Icon" class="icon">
+          <div>
+            <h3>Kurangnya RTH</h3>
+            <p>Tidak semua daerah memiliki RTH, terutama daerah pinggir kota karena keterbatasan lahan.</p>
+          </div>
+        </div>
+        <div class="reason-item">
+          <img src="https://via.placeholder.com/40" alt="Informasi Icon" class="icon">
+          <div>
+            <h3>Kebingungan Informasi</h3>
+            <p>Masyarakat kesulitan dan bingung cara berbuat apa karena data lingkungan yang terlalu teknis.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Our Solution Section -->
+    <section id="solution" class="page-section">
+      <h2>GREENOVA Our Solution</h2>
+      <div class="solution-details">
+        <h3>4-in-1 Solution</h3>
+        <ul>
+          <li>Pembersih udara</li>
+          <li>Perawat lingkungan</li>
+          <li>Pemberi informasi yang interaktif</li>
+          <li>Perediksi bencana & informasi lingkungan lainnya</li>
+        </ul>
+        <p>Gambar robot</p>
+        <img src="https://via.placeholder.com/200x150?text=Robot+Image" alt="Greenova Robot">
+        <h3>Penasaran gimana cara kerjanya?</h3>
+        <a href="#how-it-works-simulated" class="btn primary-btn">Intip cara kerjanya di sini...</a>
+      </div>
+      <a href="#home" class="btn secondary-btn">Back to main page</a>
+    </section>
+
+    <!-- Live Map Teaser Section -->
+    <section id="live-map-teaser" class="page-section">
+      <h2>Live Map Teaser</h2>
+      <div class="map-teaser-content">
+        <img src="https://via.placeholder.com/300x200?text=Peta+Jakarta" alt="Live Map Teaser Image" class="map-image">
+        <div class="map-overlay-text">Taman Pojok<br>AQI: 55 (Baik)</div>
+        <a href="#live-map-simulated" class="btn primary-btn">Jelajahi peta selanjutnya...</a>
+      </div>
+      <a href="#home" class="btn secondary-btn">Back to main page</a>
+    </section>
+
+    <!-- Mari Berkolaborasi Section -->
+    <section id="collaboration" class="page-section">
+      <h1>Mari Berkolaborasi</h1>
+      <h2>Untuk Indonesia yang lebih bersih</h2>
+      <p>Proyek ini akan berhasil melalui dukungan dan kemitraan dari berbagai pihak. Cari tahu bagaimana Anda bisa
+        menjadi bagian dari perubahan ini :)</p>
+      <button class="btn primary-btn">Hubungi kami</button>
+      <a href="#home" class="btn secondary-btn">Back to main page</a>
+    </section>
+
+    <!-- Simulated Pages (Sekarang juga akan muncul di bawah jika di-scroll) -->
+    <section id="air-quality-simulated" class="page-section">
+      <h2>Simulasi: Analisis Kualitas Udara</h2>
+      <p>Ini adalah halaman simulasi untuk analisis kualitas udara. Di sini Anda akan menampilkan data sensor
+        sebenarnya.</p>
+      <a href="#home" class="btn secondary-btn">Back to main page</a>
+    </section>
+
+    <section id="how-it-works-simulated" class="page-section">
+      <h2>Simulasi: Cara Kerja Robot</h2>
+      <p>Ini adalah halaman simulasi untuk detail cara kerja Greenova AI.</p>
+      <a href="#home" class="btn secondary-btn">Back to main page</a>
+    </section>
+
+    <section id="live-map-simulated" class="page-section">
+      <h2>Simulasi: Peta Lengkap Robot</h2>
+      <p>Ini adalah halaman simulasi untuk peta interaktif dengan lokasi robot. Di sini Anda akan mengintegrasikan peta
+        Google Maps atau OpenStreetMap.</p>
+      <a href="#home" class="btn secondary-btn">Back to main page</a>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-nav">
+        <button class="footer-icon">&#9776;</button>
+        <button class="footer-icon">&#9776;</button>
+        <button class="footer-icon">&#9776;</button>
+      </div>
+      <div class="social-media">
+        <span>Our Social Media</span>
+        <span>Our Contact</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
