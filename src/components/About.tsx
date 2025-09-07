@@ -256,7 +256,7 @@ export function About({ onNavigate }: AboutProps) {
               href="tel:+6281234567890" 
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
-              +62 812-3456-7890
+              +62 896-4301-0219
             </a>
           </div>
           <div className="space-y-2">
@@ -265,12 +265,12 @@ export function About({ onNavigate }: AboutProps) {
             </div>
             <h4 className="font-medium">Lokasi</h4>
             <a 
-              href="https://maps.google.com/?q=Jakarta,Indonesia" 
+              href="https://maps.google.com/?q=Surabaya,Indonesia" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
-              Jakarta, Indonesia
+              Surabaya, Indonesia
             </a>
           </div>
         </div>

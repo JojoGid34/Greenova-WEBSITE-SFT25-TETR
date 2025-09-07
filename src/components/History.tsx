@@ -58,13 +58,27 @@ const processDataForCharts = (data: any[]) => {
   return chartData;
 };
 
-// Helper function untuk mendapatkan status AQI
+// Helper function untuk mendapatkan status AQI dengan warna
 const getAQIStatus = (aqi: number) => {
-  if (aqi <= 50) return 'Baik';
-  if (aqi <= 100) return 'Sedang';
-  if (aqi <= 150) return 'Tidak Sehat untuk Sensitif';
-  if (aqi <= 200) return 'Tidak Sehat';
-  return 'Sangat Tidak Sehat';
+  if (aqi <= 50) return { status: 'Baik', variant: 'default', bgColor: 'bg-green-500' };
+  if (aqi <= 100) return { status: 'Sedang', variant: 'secondary', bgColor: 'bg-yellow-500' };
+  if (aqi <= 150) return { status: 'Tidak Sehat untuk Sensitif', variant: 'destructive', bgColor: 'bg-orange-500' };
+  if (aqi <= 200) return { status: 'Tidak Sehat', variant: 'destructive', bgColor: 'bg-red-500' };
+  return { status: 'Sangat Tidak Sehat', variant: 'destructive', bgColor: 'bg-red-600' };
+};
+
+// Helper function untuk format waktu "6 Jun, 10:10:42"
+const formatDetailedTime = (timestamp: any) => {
+  if (!timestamp) return 'N/A';
+  const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+  return date.toLocaleDateString('en-GB', { 
+    day: 'numeric', 
+    month: 'short' 
+  }) + ', ' + date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
 };
 
 
@@ -272,23 +286,30 @@ export function History({ selectedRobotId, onRobotSelect }: HistoryProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {robotAirReadings.slice(0, 50).map((reading, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        {new Date(reading.timestamp.seconds * 1000).toLocaleString('id-ID')}
-                      </TableCell>
-                      <TableCell>{reading.temperature}</TableCell>
-                      <TableCell>{reading.humidity}</TableCell>
-                      <TableCell>{reading.dust_pm25}</TableCell>
-                      <TableCell>{reading.dust_pm25 ? (reading.dust_pm25 * 1.5).toFixed(1) : 'N/A'}</TableCell>
-                      <TableCell>{reading.aq_number}</TableCell>
-                      <TableCell>
-                        <Badge variant={reading.aq_status === 'Baik' ? 'default' : 'destructive'}>
-                          {reading.aq_status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {robotAirReadings.slice(0, 20).map((reading, index) => {
+                    const aqi = reading.aq_number || (reading.dust_pm25 ? Math.round((reading.dust_pm25 * 2.5) + ((reading.gas_ppm || 0) * 0.5)) : 0);
+                    const statusInfo = getAQIStatus(aqi);
+                    
+                    return (
+                      <TableRow key={index}>
+                        <TableCell>
+                          {formatDetailedTime(reading.timestamp)}
+                        </TableCell>
+                        <TableCell>{reading.temperature || 'N/A'}</TableCell>
+                        <TableCell>{reading.humidity || 'N/A'}</TableCell>
+                        <TableCell>{reading.dust_pm25 || 'N/A'}</TableCell>
+                        <TableCell>{reading.dust_pm25 ? (reading.dust_pm25 * 1.5).toFixed(1) : 'N/A'}</TableCell>
+                        <TableCell>{aqi || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            className={`${statusInfo.bgColor} text-white border-0`}
+                          >
+                            {statusInfo.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>

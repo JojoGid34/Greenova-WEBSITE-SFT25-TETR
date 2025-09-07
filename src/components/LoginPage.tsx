@@ -341,7 +341,7 @@ export function LoginPage({ onLogin, onBack, onNavigate }: LoginPageProps) {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  💡 Tip: Baca soal dengan teliti dan hitung dengan cermat
+                  💡 Tip: Hapus soal, tulis jawabannya, tekan tombol 'Verifikasi'
                 </p>
               </div>
 
@@ -358,7 +358,7 @@ export function LoginPage({ onLogin, onBack, onNavigate }: LoginPageProps) {
                 ) : (
                   <>
                     <Shield className="h-4 w-4 mr-2" />
-                    Masuk
+                    Verifikasi
                   </>
                 )}
               </Button>

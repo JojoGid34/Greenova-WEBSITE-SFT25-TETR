@@ -1,26 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { 
+import { 
   Bot,
   Activity,
   Thermometer,
   Droplets,
   Wind,
-  Sun,
   Battery,
   Signal,
-  MapPin,
   Settings,
-  Play,
-  Pause,
-  Square,
-  RotateCcw,
   Zap,
   Wifi,
   WifiOff,
@@ -28,708 +21,577 @@ import { 
   CheckCircle2,
   Clock,
   AlertTriangle,
-  Search,
-  Filter,
   RefreshCw,
   Download,
-  Upload,
-  Calendar,
   TrendingUp,
   Gauge,
   Camera,
   Brain,
   Eye,
   TreePine,
-  Lightbulb
+  Lightbulb,
+  BarChart3,
+  Target,
+  Award,
+  Cpu
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useFirebaseData } from '../hooks/useFirebaseData';
-import { usePrediction } from '../hooks/usePrediction';
-import { 
-  formatValue,
-  formatNumber,
-  formatPercentage,
-  formatTimestamp,
-  formatTimeAgo,
-  formatSignalStrength,
-  formatBatteryLevel,
-  formatAirQualityStatus,
-  getStatusColor
-} from '../utils/displayUtils';
 
 interface DashboardProps {
   selectedRobotId: string;
   onRobotSelect: (robotId: string) => void;
 }
 
-// Helper function untuk mendapatkan status warna
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'online':
-      return 'text-green-500';
-    case 'offline':
-      return 'text-red-500';
-    case 'maintenance':
-      return 'text-yellow-500';
-    default:
-      return 'text-gray-500';
-  }
+// Utility functions
+const formatDateTime = (timestamp: any) => {
+  if (!timestamp) return 'N/A';
+  const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+  return date.toLocaleDateString('id-ID', { 
+    day: 'numeric', 
+    month: 'short' 
+  }) + ', ' + date.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'online':
-      return <Wifi className="h-4 w-4 text-green-500" />;
-    case 'offline':
-      return <WifiOff className="h-4 w-4 text-red-500" />;
-    case 'maintenance':
-      return <Wrench className="h-4 w-4 text-yellow-500" />;
-    default:
-      return <Activity className="h-4 w-4 text-gray-500" />;
-  }
+const getStatusColor = (battery: number, signal: number) => {
+  const isOnline = battery > 10 && signal > 20;
+  if (isOnline) return 'text-green-500';
+  if (battery <= 10) return 'text-red-500';
+  return 'text-yellow-500';
 };
 
-const getSignalStrengthStatus = (signal: number) => {
-  if (signal > 70) return 'Kuat';
-  if (signal > 30) return 'Sedang';
-  return 'Lemah';
+const getStatusIcon = (battery: number, signal: number) => {
+  const isOnline = battery > 10 && signal > 20;
+  if (isOnline) return <Wifi className="h-4 w-4 text-green-500" />;
+  if (battery <= 10) return <WifiOff className="h-4 w-4 text-red-500" />;
+  return <Wrench className="h-4 w-4 text-yellow-500" />;
+};
+
+const getStatusText = (battery: number, signal: number) => {
+  const isOnline = battery > 10 && signal > 20;
+  if (isOnline) return 'Online';
+  if (battery <= 10) return 'Baterai Rendah';
+  return 'Maintenance';
 };
 
 const getBatteryStatus = (battery: number) => {
-  if (battery > 50) return 'Baik';
-  if (battery > 20) return 'Rendah';
-  return 'Kritis';
+  if (battery > 50) return { status: 'Baik', color: 'bg-green-500' };
+  if (battery > 20) return { status: 'Rendah', color: 'bg-yellow-500' };
+  return { status: 'Kritis', color: 'bg-red-500' };
 };
 
-const getAirQualityStatus = (aqi: number) => {
-  if (aqi > 80) return 'Baik';
-  if (aqi > 50) return 'Sedang';
-  return 'Buruk';
+const getSignalStatus = (signal: number) => {
+  if (signal > 70) return { status: 'Kuat', color: 'bg-green-500' };
+  if (signal > 30) return { status: 'Sedang', color: 'bg-yellow-500' };
+  return { status: 'Lemah', color: 'bg-red-500' };
 };
 
-const getAQIStatusColor = (aqi: number) => {
-  if (aqi > 80) return 'bg-green-500';
-  if (aqi > 50) return 'bg-yellow-500';
-  return 'bg-red-500';
-};
-
-const getAQIStatusText = (aqi: number) => {
-  if (aqi > 80) return 'Baik';
-  if (aqi > 50) return 'Sedang';
-  return 'Buruk';
-};
-
-
-// Mengonversi data dari Firebase ke format chart dengan urutan waktu yang benar
-const processDataForCharts = (data: any[]) => {
-  if (!data || data.length === 0) return [];
-  
-  // Sortir data berdasarkan timestamp (dari lama ke baru)
-  const sortedData = [...data].sort((a, b) => {
-    const timeA = a.timestamp?.seconds || 0;
-    const timeB = b.timestamp?.seconds || 0;
-    return timeA - timeB;
-  });
-  
-  const hourly = sortedData.map((doc: any) => ({
-    time: new Date(doc.timestamp?.seconds * 1000).toLocaleTimeString('id-ID', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }),
-    temperature: doc.temperature || 0,
-    humidity: doc.humidity || 0,
-    airQuality: doc.aq_number || 0,
-    pm25: doc.dust_pm25 || 0,
-    timestamp: doc.timestamp?.seconds || 0
-  }));
-  
-  // Ambil 20 data terakhir dengan urutan waktu yang benar (kiri ke kanan: lama ke baru)
-  return hourly.slice(-20);
+// Custom Tooltip for better formatting
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-lg shadow-lg border">
+        <p className="font-medium">{`Waktu: ${label}`}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} style={{ color: entry.color }}>
+            {`${entry.dataKey === 'temperature' ? 'Suhu' : 
+               entry.dataKey === 'humidity' ? 'Kelembaban' : 
+               entry.dataKey === 'pm25' ? 'PM2.5' : 
+               entry.dataKey === 'aqi' ? 'AQI' : entry.dataKey}: ${entry.value.toFixed(2)}`}
+            {entry.dataKey === 'temperature' ? '°C' : 
+             entry.dataKey === 'humidity' ? '%' : 
+             entry.dataKey === 'pm25' ? ' μg/m³' : ''}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
 };
 
 export function Dashboard({ selectedRobotId, onRobotSelect }: DashboardProps) {
-  const [selectedTimeRange, setSelectedTimeRange] = useState('24h');
-  const [searchQuery, setSearchQuery] = useState('');
+  const { robots, airReadings, loading, error } = useFirebaseData();
   
-  // Menggunakan data real-time dari Firebase
-  const { robots, airReadings, loading } = useFirebaseData();
-  
-  // Menggunakan hook prediksi
-  const { predictions, loading: predictionsLoading } = usePrediction(airReadings);
-  
+  // Find selected robot
   const selectedRobot = robots.find(robot => robot.robot_id === selectedRobotId);
-  const robotAirReadings = airReadings.filter(reading => reading.robot_id === selectedRobotId);
-  const latestAirReading = robotAirReadings.length > 0 ? robotAirReadings[0] : null;
+  
+  // Filter air readings for selected robot and process data
+  const robotAirReadings = useMemo(() => {
+    if (!airReadings || !selectedRobotId) return [];
+    
+    return airReadings
+      .filter(reading => reading.robot_id === selectedRobotId)
+      .sort((a, b) => {
+        const timeA = a.timestamp?.seconds || 0;
+        const timeB = b.timestamp?.seconds || 0;
+        return timeA - timeB;
+      });
+  }, [airReadings, selectedRobotId]);
 
-  const sensorHistory = processDataForCharts(robotAirReadings);
+  // Process chart data (last 15 readings)
+  const chartData = useMemo(() => {
+    if (!robotAirReadings.length) return [];
+    
+    return robotAirReadings.slice(-15).map(reading => {
+      const pm25 = Number(reading.dust_pm25) || 0;
+      const gasPpm = Number(reading.gas_ppm) || 0;
+      const aqi = pm25 > 0 ? Math.round((pm25 * 2.5) + (gasPpm * 0.5)) : 0;
+      
+      return {
+        time: formatDateTime(reading.timestamp),
+        temperature: Number(reading.temperature) || 0,
+        humidity: Number(reading.humidity) || 0,
+        pm25: pm25,
+        aqi: aqi,
+        timestamp: reading.timestamp?.seconds || 0
+      };
+    });
+  }, [robotAirReadings]);
+
+  // Calculate performance metrics
+  const performanceMetrics = useMemo(() => {
+    if (!robotAirReadings.length || !selectedRobot) {
+      return {
+        uptime: 0,
+        dataPoints: 0,
+        avgTemperature: 0,
+        avgHumidity: 0,
+        efficiency: 0,
+        lastMaintenance: 'N/A'
+      };
+    }
+
+    const last24Hours = robotAirReadings.filter(reading => {
+      const readingTime = reading.timestamp?.seconds * 1000;
+      const now = Date.now();
+      return (now - readingTime) <= 24 * 60 * 60 * 1000;
+    });
+
+    const uptime = selectedRobot.battery > 10 && selectedRobot.signal_strength > 20 ? 
+      Math.min(99.5, (last24Hours.length / 24) * 100) : 0;
+
+    const avgTemperature = last24Hours.length > 0 ?
+      last24Hours.reduce((sum, reading) => sum + (Number(reading.temperature) || 0), 0) / last24Hours.length : 0;
+
+    const avgHumidity = last24Hours.length > 0 ?
+      last24Hours.reduce((sum, reading) => sum + (Number(reading.humidity) || 0), 0) / last24Hours.length : 0;
+
+    // Calculate efficiency based on data consistency and sensor readings
+    const efficiency = Math.min(100, 
+      (uptime * 0.4) + 
+      (selectedRobot.battery * 0.3) + 
+      (selectedRobot.signal_strength * 0.3)
+    );
+
+    return {
+      uptime: Math.round(uptime * 10) / 10,
+      dataPoints: robotAirReadings.length,
+      avgTemperature: Math.round(avgTemperature * 10) / 10,
+      avgHumidity: Math.round(avgHumidity * 10) / 10,
+      efficiency: Math.round(efficiency),
+      lastMaintenance: selectedRobot.last_seen ? formatDateTime(selectedRobot.last_seen) : 'N/A'
+    };
+  }, [robotAirReadings, selectedRobot]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Memuat data...</p>
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+          <p>Memuat data robot...</p>
+        </div>
       </div>
     );
   }
 
-  if (!selectedRobot) {
+  if (error || !selectedRobot) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Robot tidak ditemukan</p>
+        <div className="text-center">
+          <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+          <p>Robot tidak ditemukan atau tidak ada data</p>
+        </div>
       </div>
     );
   }
+
+  const latestReading = robotAirReadings[robotAirReadings.length - 1];
+  const batteryStatus = getBatteryStatus(selectedRobot.battery);
+  const signalStatus = getSignalStatus(selectedRobot.signal_strength);
 
   return (
     <div className="space-y-6">
-      {/* Header Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Dashboard Robot</h1>
-          <Badge variant="outline">{selectedRobot.robot_id}</Badge>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Robot Dashboard</h1>
+          <p className="text-muted-foreground">
+            Monitoring dan kontrol robot GREENOVA
+          </p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          {/* Robot Selector */}
+        <div className="flex items-center gap-4">
           <Select value={selectedRobotId} onValueChange={onRobotSelect}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Pilih Robot" />
             </SelectTrigger>
             <SelectContent>
               {robots.map((robot) => (
                 <SelectItem key={robot.robot_id} value={robot.robot_id}>
                   <div className="flex items-center gap-2">
-                    {getStatusIcon('online')}
-                    <span>{robot.robot_id}</span>
+                    <Bot className="h-4 w-4" />
+                    {robot.robot_id}
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-
-          {/* Time Range */}
-          <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1h">1 Jam</SelectItem>
-              <SelectItem value="24h">24 Jam</SelectItem>
-              <SelectItem value="7d">7 Hari</SelectItem>
-              <SelectItem value="30d">30 Hari</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button variant="outline" size="icon">
-            <RefreshCw className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
         </div>
       </div>
 
-      {/* Status Cards */}
+      {/* Robot Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Robot Status */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status Robot</CardTitle>
-            <Bot className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {getStatusIcon('online')}
-              <span className={`text-2xl font-bold capitalize ${getStatusColor('online')}`}>
-                online
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Status Robot</p>
+                <p className="text-2xl font-bold">
+                  {getStatusText(selectedRobot.battery, selectedRobot.signal_strength)}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                {getStatusIcon(selectedRobot.battery, selectedRobot.signal_strength)}
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                Update: {formatDateTime(selectedRobot.last_seen)}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Update: {formatTimeAgo(selectedRobot.last_seen)}
-            </p>
           </CardContent>
         </Card>
 
-        {/* Battery Status */}
+        {/* Battery */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Baterai</CardTitle>
-            <Battery className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${getStatusColor(selectedRobot.battery, 'battery')}`}>
-              {formatBatteryLevel(selectedRobot.battery)}
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Baterai</p>
+                <p className="text-2xl font-bold">{selectedRobot.battery}%</p>
+                <Badge className={`${batteryStatus.color} text-white mt-2`}>
+                  {batteryStatus.status}
+                </Badge>
+              </div>
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                <Battery className="h-6 w-6 text-primary" />
+              </div>
             </div>
-            <Progress value={selectedRobot.battery || 0} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              {getBatteryStatus(selectedRobot.battery || 0)}
-            </p>
+            <div className="mt-4">
+              <Progress value={selectedRobot.battery} className="w-full" />
+            </div>
           </CardContent>
         </Card>
 
         {/* Signal Strength */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sinyal</CardTitle>
-            <Signal className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${getStatusColor(selectedRobot.signal_strength, 'signal')}`}>
-              {formatPercentage(selectedRobot.signal_strength)}
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Sinyal</p>
+                <p className="text-2xl font-bold">{selectedRobot.signal_strength}%</p>
+                <Badge className={`${signalStatus.color} text-white mt-2`}>
+                  {signalStatus.status}
+                </Badge>
+              </div>
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                <Signal className="h-6 w-6 text-primary" />
+              </div>
             </div>
-            <Progress value={selectedRobot.signal_strength || 0} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              {formatSignalStrength(selectedRobot.signal_strength)}
-            </p>
+            <div className="mt-4">
+              <Progress value={selectedRobot.signal_strength} className="w-full" />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Air Quality */}
+        {/* Current AQI */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kualitas Udara</CardTitle>
-            <Wind className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${getStatusColor(latestAirReading?.aq_status, 'air_quality')}`}>
-              {formatAirQualityStatus(latestAirReading?.aq_status)}
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">AQI Terakhir</p>
+                <p className="text-2xl font-bold">
+                  {latestReading ? 
+                    Math.round((Number(latestReading.dust_pm25) * 2.5) + (Number(latestReading.gas_ppm) * 0.5)) : 
+                    'N/A'
+                  }
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                <Wind className="h-6 w-6 text-primary" />
+              </div>
             </div>
-            <Badge className={`${getAQIStatusColor(latestAirReading?.aq_number || 0)} text-white mt-2`}>
-              {getAQIStatusText(latestAirReading?.aq_number || 0)}
-            </Badge>
-            <p className="text-xs text-muted-foreground mt-1">
-              PM2.5: {formatNumber(latestAirReading?.dust_pm25, 1, ' μg/m³')}
-            </p>
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              <Activity className="h-4 w-4 text-green-500" />
+              <span className="text-green-500">
+                {robotAirReadings.length} data points
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="sensors">Sensor Data</TabsTrigger>
-          <TabsTrigger value="predictions">Prediksi AI</TabsTrigger>
-          <TabsTrigger value="controls">Robot Controls</TabsTrigger>
+      {/* Performance Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Performance Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Uptime (24h)</p>
+                  <p className="text-xl font-bold">{performanceMetrics.uptime}%</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
+                  <Target className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Data Points</p>
+                  <p className="text-xl font-bold">{performanceMetrics.dataPoints}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center">
+                  <Thermometer className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Avg Temperature (24h)</p>
+                  <p className="text-xl font-bold">{performanceMetrics.avgTemperature}°C</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-cyan-50 rounded-full flex items-center justify-center">
+                  <Droplets className="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Avg Humidity (24h)</p>
+                  <p className="text-xl font-bold">{performanceMetrics.avgHumidity}%</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center">
+                  <Cpu className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Efficiency Score</p>
+                  <p className="text-xl font-bold">{performanceMetrics.efficiency}%</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-50 rounded-full flex items-center justify-center">
+                  <Wrench className="h-5 w-5 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Last Update</p>
+                  <p className="text-sm font-medium">{performanceMetrics.lastMaintenance}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Charts */}
+      <Tabs defaultValue="sensors" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="sensors">Data Sensor</TabsTrigger>
+          <TabsTrigger value="control">Kontrol Robot</TabsTrigger>
+          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Suhu & Kelembaban</CardTitle>
-                <Thermometer className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold">{formatNumber(latestAirReading?.temperature, 1, '°C')}</span>
-                  <Droplets className="h-4 w-4 text-blue-500" />
-                  <span className="text-2xl font-bold">{formatPercentage(latestAirReading?.humidity)}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Kelembaban: {formatPercentage(latestAirReading?.humidity)}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Status Kipas</CardTitle>
-                <Wind className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold">
-                    {selectedRobot.fan_status ? 'Menyala' : 'Mati'}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Status berdasarkan kualitas udara
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Prediksi 1 Jam</CardTitle>
-                <Brain className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {predictionsLoading ? (
-                  <div className="text-muted-foreground">Memuat prediksi...</div>
-                ) : predictions ? (
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold">
-                      {predictions.air_quality.next_hour.aq_status}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      PM2.5: {predictions.air_quality.next_hour.pm25} μg/m³
-                    </p>
-                    <Badge variant="outline" className="text-xs">
-                      Akurasi: {predictions.air_quality.next_hour.confidence}%
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground">Data tidak tersedia</div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
+        <TabsContent value="sensors" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Sensor Data Trend</CardTitle>
+              <CardTitle>Grafik Sensor - 15 Data Terakhir</CardTitle>
             </CardHeader>
             <CardContent>
-              {sensorHistory && sensorHistory.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={sensorHistory}>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
+                    <XAxis 
+                      dataKey="time" 
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                    />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip content={<CustomTooltip />} />
                     <Line
                       type="monotone"
                       dataKey="temperature"
                       stroke="#ef4444"
                       strokeWidth={2}
-                      name="Suhu (°C)"
+                      name="Suhu"
                     />
                     <Line
                       type="monotone"
                       dataKey="humidity"
                       stroke="#3b82f6"
                       strokeWidth={2}
-                      name="Kelembaban (%)"
+                      name="Kelembaban"
                     />
                     <Line
                       type="monotone"
-                      dataKey="airQuality"
+                      dataKey="pm25"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      name="PM2.5"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="aqi"
                       stroke="#22c55e"
                       strokeWidth={2}
-                      name="Kualitas Udara"
+                      name="AQI"
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  <p>Tidak ada data sensor tersedia</p>
-                </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Predictions Tab */}
-        <TabsContent value="predictions" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {predictionsLoading ? (
-              <Card className="col-span-full">
-                <CardContent className="p-6 text-center">
-                  <div className="text-muted-foreground">Memuat prediksi AI...</div>
-                </CardContent>
-              </Card>
-            ) : predictions ? (
-              <>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Prediksi 1 Jam</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="text-lg font-bold text-center">
-                        {predictions.air_quality.next_hour.aq_status}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>PM2.5: {predictions.air_quality.next_hour.pm25}</div>
-                        <div>Gas: {predictions.air_quality.next_hour.gas_ppm}</div>
-                        <div>Suhu: {predictions.air_quality.next_hour.temperature}°C</div>
-                        <div>RH: {predictions.air_quality.next_hour.humidity}%</div>
-                      </div>
-                      <Badge variant="outline" className="w-full justify-center">
-                        Akurasi: {predictions.air_quality.next_hour.confidence}%
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Prediksi 6 Jam</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="text-lg font-bold text-center">
-                        {predictions.air_quality.next_6_hours.aq_status}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>PM2.5: {predictions.air_quality.next_6_hours.pm25}</div>
-                        <div>Gas: {predictions.air_quality.next_6_hours.gas_ppm}</div>
-                        <div>Suhu: {predictions.air_quality.next_6_hours.temperature}°C</div>
-                        <div>RH: {predictions.air_quality.next_6_hours.humidity}%</div>
-                      </div>
-                      <Badge variant="outline" className="w-full justify-center">
-                        Akurasi: {predictions.air_quality.next_6_hours.confidence}%
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Prediksi 24 Jam</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="text-lg font-bold text-center">
-                        {predictions.air_quality.next_24_hours.aq_status}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>PM2.5: {predictions.air_quality.next_24_hours.pm25}</div>
-                        <div>Gas: {predictions.air_quality.next_24_hours.gas_ppm}</div>
-                        <div>Suhu: {predictions.air_quality.next_24_hours.temperature}°C</div>
-                        <div>RH: {predictions.air_quality.next_24_hours.humidity}%</div>
-                      </div>
-                      <Badge variant="outline" className="w-full justify-center">
-                        Akurasi: {predictions.air_quality.next_24_hours.confidence}%
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
-              <Card className="col-span-full">
-                <CardContent className="p-6 text-center">
-                  <div className="text-muted-foreground">Prediksi tidak tersedia</div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {predictions && (
+        <TabsContent value="control" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5" />
-                  Rekomendasi Lingkungan
-                </CardTitle>
+                <CardTitle>Fan Control</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Trend Cuaca:</h4>
-                      <Badge variant={predictions.environmental.weather_trend === 'Membaik' ? 'default' : 
-                                   predictions.environmental.weather_trend === 'Stabil' ? 'secondary' : 'destructive'}>
-                        {predictions.environmental.weather_trend}
-                      </Badge>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2">Sumber Polusi:</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {predictions.environmental.pollution_sources.map((source, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {source}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Rekomendasi:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      {predictions.environmental.recommendations.map((rec, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          {rec}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span>Status Fan:</span>
+                  <Badge className={selectedRobot.fan_status ? 'bg-green-500' : 'bg-gray-500'}>
+                    {selectedRobot.fan_status ? 'ON' : 'OFF'}
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Sensors Tab */}
-        <TabsContent value="sensors" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Suhu Lingkungan</CardTitle>
-                <Thermometer className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(latestAirReading?.temperature, 1, '°C')}</div>
-                <div className="mt-2">
-                  <Progress
-                    value={latestAirReading ? Math.min((latestAirReading.temperature / 50) * 100, 100) : 0}
-                    className="h-2"
-                  />
+                <div className="flex gap-2">
+                  <Button 
+                    variant={selectedRobot.fan_status ? "default" : "outline"} 
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Turn ON
+                  </Button>
+                  <Button 
+                    variant={!selectedRobot.fan_status ? "default" : "outline"} 
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Turn OFF
+                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Range: 20-35°C (Normal)
-                </p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Kelembaban Udara</CardTitle>
-                <Droplets className="h-4 w-4 text-blue-500" />
+              <CardHeader>
+                <CardTitle>System Info</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatPercentage(latestAirReading?.humidity)}</div>
-                <div className="mt-2">
-                  <Progress value={latestAirReading?.humidity || 0} className="h-2" />
+              <CardContent className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Robot ID:</span>
+                  <span className="font-medium">{selectedRobot.robot_id}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Range: 40-80% (Optimal)
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">PM2.5</CardTitle>
-                <Wind className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(latestAirReading?.dust_pm25, 1, ' μg/m³')}</div>
-                <div className="mt-2">
-                  <Progress value={latestAirReading ? Math.min((latestAirReading.dust_pm25 / 150) * 100, 100) : 0} className="h-2" />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Location:</span>
+                  <span className="font-medium">{selectedRobot.city_loc || 'N/A'}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Batas Aman: &lt; 35 μg/m³
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">PM10</CardTitle>
-                <Wind className="h-4 w-4 text-gray-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(latestAirReading?.dust_pm25 ? latestAirReading.dust_pm25 * 1.5 : undefined, 1, ' μg/m³')}</div>
-                <div className="mt-2">
-                  <Progress value={latestAirReading ? Math.min((latestAirReading.dust_pm25 * 1.5 / 200) * 100, 100) : 0} className="h-2" />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Last Seen:</span>
+                  <span className="font-medium">{formatDateTime(selectedRobot.last_seen)}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Batas Aman: &lt; 50 μg/m³
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Gas PPM</CardTitle>
-                <Zap className="h-4 w-4 text-yellow-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(latestAirReading?.gas_ppm, 2, ' ppm')}</div>
-                <div className="mt-2">
-                  <Progress value={latestAirReading ? Math.min((latestAirReading.gas_ppm / 500) * 100, 100) : 0} className="h-2" />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Data Points:</span>
+                  <span className="font-medium">{robotAirReadings.length}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Range: 0-500 ppm
-                </p>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-
-
-        {/* Controls Tab */}
-        <TabsContent value="controls" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Manual Control</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline"><Play className="h-4 w-4 mr-2" />Start</Button>
-                    <Button variant="outline"><Pause className="h-4 w-4 mr-2" />Pause</Button>
-                    <Button variant="outline"><Square className="h-4 w-4 mr-2" />Stop</Button>
-                    <Button variant="outline"><RotateCcw className="h-4 w-4 mr-2" />Reset</Button>
-                  </div>
-                  <div className="space-y-3 pt-4 border-t">
+        <TabsContent value="maintenance" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Maintenance Schedule</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
                     <div>
-                      <label className="text-sm font-medium">Kecepatan Motor</label>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm">0%</span>
-                        <div className="flex-1 px-3">
-                          <input type="range" className="w-full" min="0" max="100" defaultValue="50" />
-                        </div>
-                        <span className="text-sm">100%</span>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Intensitas Penyiraman</label>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm">Low</span>
-                        <div className="flex-1 px-3">
-                          <input type="range" className="w-full" min="1" max="5" defaultValue="3" />
-                        </div>
-                        <span className="text-sm">High</span>
-                      </div>
+                      <p className="font-medium">Sensor Cleaning</p>
+                      <p className="text-sm text-muted-foreground">Completed 2 days ago</p>
                     </div>
                   </div>
+                  <Badge className="bg-green-500">Complete</Badge>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Konfigurasi Sistem</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Mode Operasi</label>
-                    <Select defaultValue="auto">
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="auto">Otomatis</SelectItem>
-                        <SelectItem value="manual">Manual</SelectItem>
-                        <SelectItem value="scheduled">Terjadwal</SelectItem>
-                      </SelectContent>
-                    </Select>
+                
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-yellow-500" />
+                    <div>
+                      <p className="font-medium">Battery Check</p>
+                      <p className="text-sm text-muted-foreground">Due in 5 days</p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">Frekuensi Update</label>
-                    <Select defaultValue="30s">
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10s">10 detik</SelectItem>
-                        <SelectItem value="30s">30 detik</SelectItem>
-                        <SelectItem value="1m">1 menit</SelectItem>
-                        <SelectItem value="5m">5 menit</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Jadwal Penyiraman</label>
-                    <Input type="time" className="mt-1" defaultValue="06:00" />
-                  </div>
-                  <div className="pt-4 border-t">
-                    <Button className="w-full">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Terapkan Konfigurasi
-                    </Button>
-                  </div>
+                  <Badge className="bg-yellow-500">Pending</Badge>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                    <div>
+                      <p className="font-medium">Filter Replacement</p>
+                      <p className="text-sm text-muted-foreground">Overdue by 1 day</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-red-500">Overdue</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

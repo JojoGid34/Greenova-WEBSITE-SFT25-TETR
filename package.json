@@ -1,39 +1,39 @@
-
-  {
+{
       "name": "GREENOVA - TETR",
       "version": "0.1.0",
       "private": true,
       "dependencies": {
-          "@radix-ui/react-accordion": "*",
-          "@radix-ui/react-collapsible": "*",
-          "@radix-ui/react-dialog": "*",
-          "@radix-ui/react-label": "*",
-          "@radix-ui/react-progress": "*",
-          "@radix-ui/react-scroll-area": "*",
-          "@radix-ui/react-select": "*",
-          "@radix-ui/react-separator": "*",
-          "@radix-ui/react-slider": "*",
-          "@radix-ui/react-slot": "*",
-          "@radix-ui/react-switch": "*",
-          "@radix-ui/react-tabs": "*",
-          "class-variance-authority": "*",
-          "clsx": "*",
-          "embla-carousel-react": "*",
-          "firebase": "*",
-          "lucide-react": "*",
-          "react": "^18.3.1",
-          "react-dom": "^18.3.1",
-          "recharts": "*",
-          "sonner": "*",
-          "tailwind-merge": "*"
+            "@radix-ui/react-accordion": "*",
+            "@radix-ui/react-collapsible": "*",
+            "@radix-ui/react-dialog": "*",
+            "@radix-ui/react-label": "*",
+            "@radix-ui/react-progress": "*",
+            "@radix-ui/react-scroll-area": "*",
+            "@radix-ui/react-select": "*",
+            "@radix-ui/react-separator": "*",
+            "@radix-ui/react-slider": "*",
+            "@radix-ui/react-slot": "*",
+            "@radix-ui/react-switch": "*",
+            "@radix-ui/react-tabs": "*",
+            "@tensorflow/tfjs": "^4.22.0",
+            "class-variance-authority": "*",
+            "clsx": "*",
+            "embla-carousel-react": "*",
+            "firebase": "*",
+            "lucide-react": "*",
+            "react": "^18.3.1",
+            "react-dom": "^18.3.1",
+            "recharts": "*",
+            "sonner": "*",
+            "tailwind-merge": "*"
       },
       "devDependencies": {
-          "@types/node": "^20.10.0",
-          "@vitejs/plugin-react-swc": "^3.10.2",
-          "vite": "6.3.5"
+            "@types/node": "^20.10.0",
+            "@vitejs/plugin-react-swc": "^3.10.2",
+            "vite": "6.3.5"
       },
       "scripts": {
-          "dev": "vite",
-          "build": "vite build"
+            "dev": "vite",
+            "build": "vite build"
       }
-  }
+}

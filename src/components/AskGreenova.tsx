@@ -11,13 +11,9 @@ import {
   Sparkles,
   Clock,
   CheckCircle2,
-  Thermometer,
-  Droplets,
-  Wind,
-  TreePine,
   ArrowDown
 } from 'lucide-react';
-import { useFirebaseData } from '../hooks/useFirebaseData'; // Impor custom hook
+import { useFirebaseData } from '../hooks/useFirebaseData';
 
 interface Message {
   id: string;
@@ -43,6 +39,35 @@ const getAQIStatus = (aqi: number) => {
   return 'Sangat Tidak Sehat';
 };
 
+// Typing animation component
+const TypingAnimation = ({ text, onComplete }: { text: string; onComplete: () => void }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      const timer = setTimeout(() => {
+        setDisplayText(prev => prev + text[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }, 20); // Adjust speed here
+      return () => clearTimeout(timer);
+    } else {
+      onComplete();
+    }
+  }, [currentIndex, text, onComplete]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="whitespace-pre-wrap" dangerouslySetInnerHTML={{
+        __html: displayText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />')
+      }} />
+      {currentIndex < text.length && (
+        <span className="inline-block w-2 h-4 bg-primary animate-pulse" />
+      )}
+    </div>
+  );
+};
+
 export function AskGreenova() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -62,6 +87,8 @@ Silakan tanya apa saja tentang data lingkungan! 😊`,
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [currentTypingText, setCurrentTypingText] = useState('');
+  const [showTypingAnimation, setShowTypingAnimation] = useState(false);
   
   // Menggunakan custom hook untuk mendapatkan data real-time
   const { airReadings, plantReadings, loading, error } = useFirebaseData();
@@ -75,7 +102,7 @@ Silakan tanya apa saja tentang data lingkungan! 😊`,
     const autoMessage = sessionStorage.getItem('autoMessage');
     if (autoMessage) {
       setInputValue(autoMessage);
-      sessionStorage.removeItem('autoMessage'); // Hapus setelah digunakan
+      sessionStorage.removeItem('autoMessage');
       
       // Auto-send message setelah 1 detik
       setTimeout(async () => {
@@ -117,22 +144,22 @@ Silakan tanya apa saja tentang data lingkungan! 😊`,
     // Gabungkan data sensor udara dan tanaman terbaru
     let combinedDataText = '';
     if (latestAirReading) {
+      const calculatedAQI = latestAirReading.dust_pm25 ? Math.round((latestAirReading.dust_pm25 * 2.5) + (latestAirReading.gas_ppm * 0.5)) : 0;
       combinedDataText += `
 Data Udara Terbaru:
-- Suhu: ${latestAirReading.temperature}°C
-- Kelembaban Udara: ${latestAirReading.humidity}%
-- PM2.5: ${latestAirReading.dust_pm25} μg/m³
-- PM10: ${latestAirReading.dust_pm25 ? (latestAirReading.dust_pm25 * 1.5).toFixed(1) : 'N/A'} μg/m³
-- Kualitas Udara (AQI): ${latestAirReading.aq_number} (${getAQIStatus(latestAirReading.aq_number)})
+- Suhu: ${latestAirReading.temperature || 'N/A'}°C
+- Kelembaban Udara: ${latestAirReading.humidity || 'N/A'}%
+- PM2.5: ${latestAirReading.dust_pm25 || 'N/A'} μg/m³
+- Gas PPM: ${latestAirReading.gas_ppm || 'N/A'} ppm
+- Kualitas Udara (AQI): ${calculatedAQI} (${getAQIStatus(calculatedAQI)})
       `.trim();
     }
     if (latestPlantReading) {
       combinedDataText += `\n\nData Tanaman Terbaru:
-- Kelembaban Tanaman A: ${latestPlantReading.moisture_percent}% (${latestPlantReading.condition})
+- Kelembaban Tanaman A: ${latestPlantReading.moisture_percent || 'N/A'}% (${latestPlantReading.condition || 'N/A'})
       `.trim();
     }
     
-    // Prompt yang menggabungkan data dan instruksi penolakan
     const combinedPrompt = `
       Anda adalah GREENOVA AI. Jawablah pertanyaan pengguna dalam Bahasa Indonesia yang santai, ramah, dan tidak kaku.
       Gunakan data sensor yang disediakan di bawah ini untuk menjawab pertanyaan spesifik tentang kondisi lingkungan terkini.
@@ -192,15 +219,30 @@ Data Udara Terbaru:
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
 
+    // Show typing animation
+    setShowTypingAnimation(true);
+    setCurrentTypingText('');
+
     const botResponseText = await fetchAIResponse(userMessage.text);
+    
+    // Hide typing animation and show real response with typing effect
+    setShowTypingAnimation(false);
+    setCurrentTypingText(botResponseText);
 
     const botResponse: Message = {
       id: (Date.now() + 1).toString(),
       text: botResponseText,
       isBot: true,
-      timestamp: new Date()
+      timestamp: new Date(),
+      typing: true
     };
     setMessages(prev => [...prev, botResponse]);
+  };
+
+  const handleTypingComplete = (messageId: string) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, typing: false } : msg
+    ));
   };
 
   const handleQuickQuestion = (question: string) => {
@@ -224,7 +266,6 @@ Data Udara Terbaru:
       .replace(/\n/g, '<br />');
   };
 
-  // Tampilkan layar loading jika data belum siap
   if (loading) {
     return <div>Memuat data...</div>;
   }
@@ -242,8 +283,8 @@ Data Udara Terbaru:
           <div>
             <h1 className="text-xl font-semibold">GREENOVA AI Assistant</h1>
             <div className="flex items-center gap-2 text-white/80 text-sm">
-              <div className={`w-2 h-2 ${isTyping ? 'bg-orange-400' : 'bg-green-400'} rounded-full ${isTyping ? 'animate-pulse' : ''}`}></div>
-              {isTyping ? "Mengetik..." : "Online - Siap membantu Anda"}
+              <div className={`w-2 h-2 ${isTyping || showTypingAnimation ? 'bg-orange-400' : 'bg-green-400'} rounded-full ${isTyping || showTypingAnimation ? 'animate-pulse' : ''}`}></div>
+              {isTyping || showTypingAnimation ? "Mengetik..." : "Online - Siap membantu Anda"}
             </div>
           </div>
         </div>
@@ -271,12 +312,19 @@ Data Udara Terbaru:
                         ? 'bg-muted text-muted-foreground' 
                         : 'bg-primary text-primary-foreground ml-auto'
                     }`}>
-                      <div
-                        className="whitespace-pre-wrap"
-                        dangerouslySetInnerHTML={{
-                          __html: formatMessage(message.text)
-                        }}
-                      />
+                      {message.isBot && message.typing ? (
+                        <TypingAnimation 
+                          text={message.text} 
+                          onComplete={() => handleTypingComplete(message.id)}
+                        />
+                      ) : (
+                        <div
+                          className="whitespace-pre-wrap"
+                          dangerouslySetInnerHTML={{
+                            __html: formatMessage(message.text)
+                          }}
+                        />
+                      )}
                     </div>
                     <div className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
                       message.isBot ? 'justify-start' : 'justify-end'
@@ -297,6 +345,23 @@ Data Udara Terbaru:
                   )}
                 </div>
               ))}
+
+              {showTypingAnimation && (
+                <div className="flex gap-3 justify-start">
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="max-w-[80%]">
+                    <div className="rounded-2xl px-4 py-3 bg-muted text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               </div>
             </ScrollArea>
             
@@ -338,12 +403,12 @@ Data Udara Terbaru:
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Tanyakan tentang data lingkungan, status robot, atau kondisi tanaman..."
                   className="pr-20 bg-input-background"
-                  disabled={isTyping}
+                  disabled={isTyping || showTypingAnimation}
                 />
               </div>
               <Button 
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isTyping}
+                disabled={!inputValue.trim() || isTyping || showTypingAnimation}
                 className="px-6"
               >
                 <Send className="h-4 w-4" />
@@ -352,43 +417,6 @@ Data Udara Terbaru:
             <p className="text-xs text-muted-foreground mt-2 text-center">
               💡 GREENOVA AI dapat memberikan informasi real-time tentang lingkungan dan pertanian
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-4 rounded-t-none border-t-0">
-        <CardContent className="p-3">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <Thermometer className="h-4 w-4 text-red-500" />
-              <span className="text-sm">
-                {latestAirReading?.temperature || 0}°C
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <Droplets className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">
-                {latestAirReading?.humidity || 0}%
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <Wind className="h-4 w-4 text-gray-500" />
-              <span className="text-sm">
-                AQI {latestAirReading?.aq_number || 0}
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <TreePine className="h-4 w-4 text-green-500" />
-              <span className="text-sm">
-                Tanaman A: {latestPlantReading?.condition || 'N/A'}
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <Bot className="h-4 w-4 text-primary" />
-              <span className="text-sm">
-                {loading ? 'Menghubungkan...' : error ? 'Error' : 'Online'}
-              </span>
-            </div>
           </div>
         </CardContent>
       </Card>

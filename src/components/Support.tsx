@@ -42,7 +42,7 @@ export function Support() {
         </div>
         <div className="space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Dukung Masa Depan Pertanian 🌱
+            Dukung Masa Depan Lingkungan
           </h1>
           <div className="max-w-3xl mx-auto space-y-4">
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
