@@ -1,352 +1,526 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { 
+import { 
+  History as HistoryIcon,
   Calendar,
-  Clock,
-  Activity,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
   Download,
   Filter,
   Search,
   RefreshCw,
+  AlertTriangle,
   Bot,
-  Thermometer,
-  Droplets,
+  TreePine,
   Wind,
-  Battery,
-  Signal,
-  MapPin,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  FileText,
-  BarChart3,
-  BarChart
+  Droplets,
+  Thermometer,
+  Activity,
+  Clock,
+  TrendingUp
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { useFirebaseData } from '../hooks/useFirebaseData';
-import { LineChartData } from 'recharts';
 
 interface HistoryProps {
   selectedRobotId: string;
   onRobotSelect: (robotId: string) => void;
 }
 
-// Helper function untuk mengonversi data dari Firebase ke format chart
-const processDataForCharts = (data: any[]) => {
-  const chartData = data.map((doc: any) => {
-    // Pastikan timestamp ada dan berupa objek Firestore Timestamp
-    const date = doc.timestamp?.seconds ? new Date(doc.timestamp.seconds * 1000) : new Date();
-    return {
-      time: date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-      timestamp: date.toISOString(), // Gunakan ISO string untuk data mentah
-      temperature: doc.temperature,
-      humidity: doc.humidity,
-      aqi: doc.aq_number,
-      pm25: doc.dust_pm25,
-      pm10: doc.dust_pm25 ? (doc.dust_pm25 * 1.5) : 0
-    };
-  });
-  return chartData;
-};
-
-// Helper function untuk mendapatkan status AQI dengan warna
-const getAQIStatus = (aqi: number) => {
-  if (aqi <= 50) return { status: 'Baik', variant: 'default', bgColor: 'bg-green-500' };
-  if (aqi <= 100) return { status: 'Sedang', variant: 'secondary', bgColor: 'bg-yellow-500' };
-  if (aqi <= 150) return { status: 'Tidak Sehat untuk Sensitif', variant: 'destructive', bgColor: 'bg-orange-500' };
-  if (aqi <= 200) return { status: 'Tidak Sehat', variant: 'destructive', bgColor: 'bg-red-500' };
-  return { status: 'Sangat Tidak Sehat', variant: 'destructive', bgColor: 'bg-red-600' };
-};
-
-// Helper function untuk format waktu "6 Jun, 10:10:42"
-const formatDetailedTime = (timestamp: any) => {
-  if (!timestamp) return 'N/A';
-  const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
-  return date.toLocaleDateString('en-GB', { 
-    day: 'numeric', 
-    month: 'short' 
-  }) + ', ' + date.toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-};
-
-
 export function History({ selectedRobotId, onRobotSelect }: HistoryProps) {
-  const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
+  const { 
+    robotData, 
+    tamanData,
+    formatDateTime, 
+    loading, 
+    error, 
+    refreshData 
+  } = useFirebaseData();
+
+  const [activeTab, setActiveTab] = useState<'robot' | 'plants'>('robot');
+  const [filterPeriod, setFilterPeriod] = useState<'all' | '24h' | '7d' | '30d'>('7d');
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Menggunakan data real-time dari Firebase
-  const { robots, airReadings, loading } = useFirebaseData();
-  
-  const selectedRobot = robots.find(robot => robot.robot_id === selectedRobotId);
-  const robotAirReadings = airReadings.filter(reading => reading.robot_id === selectedRobotId);
-  
-  // Mengonversi data untuk chart dan mengurutkan secara kronologis
-  const sensorHistory = processDataForCharts(robotAirReadings).reverse();
+
+  // Filter data based on period
+  const filteredRobotData = useMemo(() => {
+    if (!historicalRobotData.length) return [];
+    
+    const now = new Date();
+    let cutoffDate = new Date(0);
+    
+    switch (filterPeriod) {
+      case '24h':
+        cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        cutoffDate = new Date(0);
+    }
+
+    return historicalRobotData.filter(data => {
+      const dataDate = new Date(data.terakhir_update.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1'));
+      return dataDate >= cutoffDate;
+    });
+  }, [historicalRobotData, filterPeriod]);
+
+  const filteredPlantData = useMemo(() => {
+    if (!historicalPlantData.length) return [];
+    
+    const now = new Date();
+    let cutoffDate = new Date(0);
+    
+    switch (filterPeriod) {
+      case '24h':
+        cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        cutoffDate = new Date(0);
+    }
+
+    return historicalPlantData.filter(data => {
+      const dataDate = new Date(data.timestamp.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1'));
+      return dataDate >= cutoffDate;
+    });
+  }, [historicalPlantData, filterPeriod]);
+
+  // Get chart data
+  const robotChartData = getRobotChartData(50);
+  const plantChartData = getPlantChartData(50);
+
+  // Statistics
+  const robotStats = useMemo(() => {
+    if (!filteredRobotData.length) return {
+      avgTemp: 0,
+      avgHumidity: 0,
+      avgAQI: 0,
+      totalReadings: 0
+    };
+
+    const totals = filteredRobotData.reduce((acc, data) => ({
+      temp: acc.temp + data.suhu,
+      humidity: acc.humidity + data.kelembaban,
+      aqi: acc.aqi + data.aqi_lokal
+    }), { temp: 0, humidity: 0, aqi: 0 });
+
+    const count = filteredRobotData.length;
+
+    return {
+      avgTemp: Math.round((totals.temp / count) * 10) / 10,
+      avgHumidity: Math.round((totals.humidity / count) * 10) / 10,
+      avgAQI: Math.round(totals.aqi / count),
+      totalReadings: count
+    };
+  }, [filteredRobotData]);
+
+  const plantStats = useMemo(() => {
+    if (!filteredPlantData.length) return {
+      avgMoistureA: 0,
+      avgMoistureB: 0,
+      totalReadings: 0,
+      healthyReadings: 0
+    };
+
+    const totals = filteredPlantData.reduce((acc, data) => ({
+      moistureA: acc.moistureA + (data.A?.kelembaban || 0),
+      moistureB: acc.moistureB + (data.B?.kelembaban || 0),
+      healthy: acc.healthy + ((data.A?.kondisi === 'Baik' ? 1 : 0) + (data.B?.kondisi === 'Baik' ? 1 : 0))
+    }), { moistureA: 0, moistureB: 0, healthy: 0 });
+
+    const count = filteredPlantData.length;
+
+    return {
+      avgMoistureA: Math.round((totals.moistureA / count) * 10) / 10,
+      avgMoistureB: Math.round((totals.moistureB / count) * 10) / 10,
+      totalReadings: count,
+      healthyReadings: totals.healthy
+    };
+  }, [filteredPlantData]);
+
+  const exportData = () => {
+    const dataToExport = activeTab === 'robot' ? filteredRobotData : filteredPlantData;
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `greenova-${activeTab}-data-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Memuat data...</p>
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+          <p>Memuat data riwayat...</p>
+        </div>
       </div>
     );
   }
 
-  if (!selectedRobot) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Robot tidak ditemukan</p>
+        <div className="text-center">
+          <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+          <p>Gagal memuat data: {error}</p>
+          <Button onClick={refreshData} className="mt-4">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Coba Lagi
+          </Button>
+        </div>
       </div>
     );
   }
-
-  // Menghitung statistik sederhana dari data yang ada
-  const totalReadings = robotAirReadings.length;
-  const avgTemp = (robotAirReadings.reduce((sum, r) => sum + (r.temperature || 0), 0) / totalReadings).toFixed(1);
-  const avgAqi = (robotAirReadings.reduce((sum, r) => sum + (r.aq_number || 0), 0) / totalReadings).toFixed(0);
 
   return (
     <div className="space-y-6">
-      {/* Header Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Riwayat Robot</h1>
-          <Badge variant="outline">{selectedRobot.robot_id}</Badge>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Riwayat Data</h1>
+          <p className="text-muted-foreground">
+            Analisis data historis monitoring GREENOVA
+          </p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          {/* Robot Selector */}
-          <Select value={selectedRobotId} onValueChange={onRobotSelect}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Pilih Robot" />
-            </SelectTrigger>
-            <SelectContent>
-              {robots.map((robot) => (
-                <SelectItem key={robot.robot_id} value={robot.robot_id}>
-                  <div className="flex items-center gap-2">
-                    <Bot className="h-4 w-4" />
-                    <span>{robot.robot_id}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Time Range */}
-          <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
-            <SelectTrigger className="w-[120px]">
+        <div className="flex items-center gap-4">
+          <Select value={filterPeriod} onValueChange={(value: any) => setFilterPeriod(value)}>
+            <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1d">1 Hari</SelectItem>
+              <SelectItem value="24h">24 Jam</SelectItem>
               <SelectItem value="7d">7 Hari</SelectItem>
               <SelectItem value="30d">30 Hari</SelectItem>
-              <SelectItem value="90d">90 Hari</SelectItem>
+              <SelectItem value="all">Semua Data</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button variant="outline" size="icon">
-            <RefreshCw className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={exportData}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
           </Button>
-
-          <Button variant="outline" size="icon">
-            <Download className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={refreshData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
         </div>
       </div>
 
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Data</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalReadings}</div>
-            <p className="text-xs text-muted-foreground">sensor readings</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Temperature</CardTitle>
-            <Thermometer className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{avgTemp}°C</div>
-            <p className="text-xs text-muted-foreground">rata-rata suhu</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. AQI</CardTitle>
-            <Wind className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{avgAqi}</div>
-            <p className="text-xs text-muted-foreground">rata-rata kualitas udara</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Uptime</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">N/A</div>
-            <p className="text-xs text-muted-foreground">data belum tersedia</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="sensors" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="sensors">Sensor Data</TabsTrigger>
-          <TabsTrigger value="tasks">Task History</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-          <TabsTrigger value="alerts">Alerts</TabsTrigger>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(value: any) => setActiveTab(value)} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="robot" className="flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            Data Robot
+          </TabsTrigger>
+          <TabsTrigger value="plants" className="flex items-center gap-2">
+            <TreePine className="h-4 w-4" />
+            Data Tanaman
+          </TabsTrigger>
         </TabsList>
 
-        {/* Sensors Data Tab */}
-        <TabsContent value="sensors" className="space-y-6">
-          {/* Sensor Trend Chart */}
+        <TabsContent value="robot" className="space-y-6">
+          {/* Robot Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Rata-rata Suhu</p>
+                    <p className="text-2xl font-bold">{robotStats.avgTemp}°C</p>
+                  </div>
+                  <Thermometer className="h-8 w-8 text-red-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Rata-rata Kelembaban</p>
+                    <p className="text-2xl font-bold">{robotStats.avgHumidity}%</p>
+                  </div>
+                  <Droplets className="h-8 w-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Rata-rata AQI</p>
+                    <p className="text-2xl font-bold">{robotStats.avgAQI}</p>
+                  </div>
+                  <Wind className="h-8 w-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Pembacaan</p>
+                    <p className="text-2xl font-bold">{robotStats.totalReadings}</p>
+                  </div>
+                  <Activity className="h-8 w-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Robot Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Sensor Data Trends</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Tren Data Robot
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={sensorHistory}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="time" 
-                    tickFormatter={(value) => value}
-                  />
-                  <YAxis />
-                  <Tooltip 
-                    labelFormatter={(label) => `Waktu: ${label}`}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="temperature" 
-                    stroke="#ef4444" 
-                    strokeWidth={2}
-                    name="Suhu (°C)"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="humidity" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    name="Kelembaban (%)"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="aqi" 
-                    stroke="#22c55e" 
-                    strokeWidth={2}
-                    name="AQI"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="h-80">
+                {robotChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={robotChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="time" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={70}
+                      />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="suhu" stroke="#ef4444" strokeWidth={2} name="Suhu (°C)" />
+                      <Line type="monotone" dataKey="kelembaban" stroke="#3b82f6" strokeWidth={2} name="Kelembaban (%)" />
+                      <Line type="monotone" dataKey="aqi" stroke="#22c55e" strokeWidth={2} name="AQI" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Tidak ada data grafik tersedia
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Sensor Data Table */}
+          {/* Robot Data Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Detailed Sensor Readings</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <HistoryIcon className="h-5 w-5" />
+                Data Robot Detail
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Suhu (°C)</TableHead>
-                    <TableHead>Kelembaban (%)</TableHead>
-                    <TableHead>PM2.5 (μg/m³)</TableHead>
-                    <TableHead>PM10 (μg/m³)</TableHead>
-                    <TableHead>AQI</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {robotAirReadings.slice(0, 20).map((reading, index) => {
-                    const aqi = reading.aq_number || (reading.dust_pm25 ? Math.round((reading.dust_pm25 * 2.5) + ((reading.gas_ppm || 0) * 0.5)) : 0);
-                    const statusInfo = getAQIStatus(aqi);
-                    
-                    return (
-                      <TableRow key={index}>
-                        <TableCell>
-                          {formatDetailedTime(reading.timestamp)}
-                        </TableCell>
-                        <TableCell>{reading.temperature || 'N/A'}</TableCell>
-                        <TableCell>{reading.humidity || 'N/A'}</TableCell>
-                        <TableCell>{reading.dust_pm25 || 'N/A'}</TableCell>
-                        <TableCell>{reading.dust_pm25 ? (reading.dust_pm25 * 1.5).toFixed(1) : 'N/A'}</TableCell>
-                        <TableCell>{aqi || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            className={`${statusInfo.bgColor} text-white border-0`}
-                          >
-                            {statusInfo.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Task History Tab - placeholder */}
-        <TabsContent value="tasks" className="space-y-6">
-          <Card>
-            <CardHeader><CardTitle>Riwayat Tugas</CardTitle></CardHeader>
-            <CardContent>
-              <div className="text-center p-8 text-muted-foreground">
-                <p>Data riwayat tugas belum tersedia.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">Waktu</th>
+                      <th className="text-left p-3">Suhu (°C)</th>
+                      <th className="text-left p-3">Kelembaban (%)</th>
+                      <th className="text-left p-3">PM2.5 (μg/m³)</th>
+                      <th className="text-left p-3">Gas (ppm)</th>
+                      <th className="text-left p-3">AQI</th>
+                      <th className="text-left p-3">Jarak (cm)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRobotData.length > 0 ? 
+                      filteredRobotData.slice(0, 20).map((data, index) => (
+                        <tr key={index} className="border-b hover:bg-muted/50">
+                          <td className="p-3 text-sm">{formatDateTime(data.terakhir_update)}</td>
+                          <td className="p-3 font-medium">{data.suhu}</td>
+                          <td className="p-3 font-medium">{data.kelembaban}</td>
+                          <td className="p-3 font-medium">{data.debu}</td>
+                          <td className="p-3 font-medium">{data.gas}</td>
+                          <td className="p-3">
+                            <Badge style={{ backgroundColor: robotData?.aqi_color }}>
+                              {data.aqi_lokal}
+                            </Badge>
+                          </td>
+                          <td className="p-3 font-medium">{data.jarak}</td>
+                        </tr>
+                      ))
+                    : (
+                      <tr>
+                        <td colSpan={7} className="text-center p-8 text-muted-foreground">
+                          Tidak ada data riwayat robot tersedia
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Maintenance Tab - placeholder */}
-        <TabsContent value="maintenance" className="space-y-6">
+        <TabsContent value="plants" className="space-y-6">
+          {/* Plant Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Rata-rata Kelembaban A</p>
+                    <p className="text-2xl font-bold">{plantStats.avgMoistureA}%</p>
+                  </div>
+                  <TreePine className="h-8 w-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Rata-rata Kelembaban B</p>
+                    <p className="text-2xl font-bold">{plantStats.avgMoistureB}%</p>
+                  </div>
+                  <TreePine className="h-8 w-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Pembacaan</p>
+                    <p className="text-2xl font-bold">{plantStats.totalReadings}</p>
+                  </div>
+                  <Activity className="h-8 w-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Kondisi Sehat</p>
+                    <p className="text-2xl font-bold">{plantStats.healthyReadings}</p>
+                  </div>
+                  <TreePine className="h-8 w-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Plant Chart */}
           <Card>
-            <CardHeader><CardTitle>Riwayat Maintenance</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Tren Kelembaban Tanaman
+              </CardTitle>
+            </CardHeader>
             <CardContent>
-              <div className="text-center p-8 text-muted-foreground">
-                <p>Data riwayat maintenance belum tersedia.</p>
+              <div className="h-80">
+                {plantChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={plantChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="time" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={70}
+                      />
+                      <YAxis domain={[0, 100]} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="A_kelembaban" stroke="#22c55e" strokeWidth={3} name="Tanaman A" />
+                      <Line type="monotone" dataKey="B_kelembaban" stroke="#3b82f6" strokeWidth={3} name="Tanaman B" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Tidak ada data grafik tersedia
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Alerts Tab - placeholder */}
-        <TabsContent value="alerts" className="space-y-6">
+          {/* Plant Data Table */}
           <Card>
-            <CardHeader><CardTitle>System Alerts</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HistoryIcon className="h-5 w-5" />
+                Data Tanaman Detail
+              </CardTitle>
+            </CardHeader>
             <CardContent>
-              <div className="text-center p-8 text-muted-foreground">
-                <p>Data peringatan sistem belum tersedia.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">Waktu</th>
+                      <th className="text-left p-3">Tanaman A - Kelembaban</th>
+                      <th className="text-left p-3">Tanaman A - Kondisi</th>
+                      <th className="text-left p-3">Tanaman B - Kelembaban</th>
+                      <th className="text-left p-3">Tanaman B - Kondisi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPlantData.length > 0 ? 
+                      filteredPlantData.slice(0, 20).map((data, index) => {
+                        const getConditionColor = (kondisi: string) => {
+                          switch (kondisi?.toLowerCase()) {
+                            case 'baik': return 'bg-green-500';
+                            case 'sedang': return 'bg-yellow-500';
+                            case 'buruk': return 'bg-red-500';
+                            default: return 'bg-gray-500';
+                          }
+                        };
+
+                        return (
+                          <tr key={index} className="border-b hover:bg-muted/50">
+                            <td className="p-3 text-sm">{formatDateTime(data.timestamp)}</td>
+                            <td className="p-3 font-medium">{data.A?.kelembaban || 'N/A'}%</td>
+                            <td className="p-3">
+                              <Badge className={`${getConditionColor(data.A?.kondisi)} text-white text-xs`}>
+                                {data.A?.kondisi || 'N/A'}
+                              </Badge>
+                            </td>
+                            <td className="p-3 font-medium">{data.B?.kelembaban || 'N/A'}%</td>
+                            <td className="p-3">
+                              <Badge className={`${getConditionColor(data.B?.kondisi)} text-white text-xs`}>
+                                {data.B?.kondisi || 'N/A'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    : (
+                      <tr>
+                        <td colSpan={5} className="text-center p-8 text-muted-foreground">
+                          Tidak ada data riwayat tanaman tersedia
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>

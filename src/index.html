@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GREENOVA AI - Dashboard Robot Lingkungan</title>
+    <meta name="description" content="GREENOVA AI menghadirkan robot pintar untuk menciptakan lingkungan bersih dan sehat melalui pertanian urban berkelanjutan.">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Memuat GREENOVA AI...</h2>
+            <p>Menghubungkan ke sistem monitoring lingkungan</p>
+        </div>
+    </div>
+
+    <!-- Scroll Notification -->
+    <div id="scroll-notification" class="scroll-notification hidden">
+        <div class="scroll-notification-content">
+            <svg class="scroll-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 13l3 3 7-7"></path>
+                <path d="M12 17V7"></path>
+            </svg>
+            <span>Scroll ke bagian bawah untuk melihat kualitas udara dan info selanjutnya</span>
+            <button id="close-scroll-notification" class="close-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 18L6 6"></path>
+                    <path d="M6 18L18 6"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app">
+        <!-- Public Navigation Header -->
+        <header id="main-header" class="main-header">
+            <nav class="nav-container">
+                <div class="nav-brand">
+                    <div class="brand-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="3" y="11" width="11" height="10" rx="2" ry="2"></rect>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <path d="M12 7v4M8 21l-2-2M16 21l2-2"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="brand-text">GREENOVA</span>
+                        <div class="brand-subtitle">Robot Monitoring</div>
+                    </div>
+                </div>
+                
+                <div class="nav-links">
+                    <a href="#" data-page="home" class="nav-link active">Home</a>
+                    <a href="#" data-page="ask-greenova" class="nav-link">Ask GREENOVA</a>
+                    <a href="#" data-page="air-quality" class="nav-link">Air Quality</a>
+                    <a href="#" data-page="how-it-works" class="nav-link">How It Works</a>
+                    <a href="#" data-page="education" class="nav-link">Edukasi</a>
+                    <a href="#" data-page="about" class="nav-link">About</a>
+                    <a href="#" data-page="support" class="nav-link">Support</a>
+                </div>
+                
+                <div class="nav-actions">
+                    <button id="login-btn" class="btn btn-outline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M21 12H9"></path>
+                        </svg>
+                        Login Admin
+                    </button>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                        </svg>
+                        <svg class="moon-icon hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    <div class="robot-status">
+                        <div class="status-indicator"></div>
+                        <span>Robot Aktif</span>
+                    </div>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="mobile-menu-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12h18M3 6h18M3 18h18"></path>
+                    </svg>
+                </button>
+            </nav>
+            
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="mobile-menu hidden">
+                <div class="mobile-nav-links">
+                    <a href="#" data-page="home" class="mobile-nav-link">Home</a>
+                    <a href="#" data-page="ask-greenova" class="mobile-nav-link">Ask GREENOVA</a>
+                    <a href="#" data-page="air-quality" class="mobile-nav-link">Air Quality</a>
+                    <a href="#" data-page="how-it-works" class="mobile-nav-link">How It Works</a>
+                    <a href="#" data-page="education" class="mobile-nav-link">Edukasi</a>
+                    <a href="#" data-page="about" class="mobile-nav-link">About</a>
+                    <a href="#" data-page="support" class="mobile-nav-link">Support</a>
+                </div>
+                <div class="mobile-nav-actions">
+                    <button id="mobile-login-btn" class="btn btn-outline btn-full">Login Admin</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin Sidebar -->
+        <aside id="admin-sidebar" class="admin-sidebar hidden">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <div class="brand-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="3" y="11" width="11" height="10" rx="2" ry="2"></rect>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <path d="M12 7v4M8 21l-2-2M16 21l2-2"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="brand-text">GREENOVA</span>
+                        <div class="brand-subtitle">Admin Panel</div>
+                    </div>
+                </div>
+                <button id="sidebar-close" class="sidebar-close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 18L6 6M6 18L18 6"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- Device Tabs -->
+                <div class="device-tabs">
+                    <button id="robots-tab" class="device-tab active">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="11" height="10" rx="2" ry="2"></rect>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <path d="M12 7v4M8 21l-2-2M16 21l2-2"></path>
+                        </svg>
+                        <span>Robots (<span id="robots-count">0</span>)</span>
+                    </button>
+                    <button id="stations-tab" class="device-tab">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <span>Stations (<span id="stations-count">0</span>)</span>
+                    </button>
+                </div>
+
+                <!-- Statistics -->
+                <div class="sidebar-stats">
+                    <h3>Status Overview</h3>
+                    <div id="device-stats" class="stats-grid">
+                        <!-- Stats will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <div class="sidebar-search">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="device-search" placeholder="Cari device..." />
+                    </div>
+                </div>
+
+                <!-- Device List -->
+                <div class="device-list">
+                    <h3 id="device-list-title">Daftar Robots</h3>
+                    <div id="device-list-content">
+                        <!-- Device list will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Admin Navigation -->
+                <nav class="sidebar-nav">
+                    <a href="#" data-page="admin-dashboard" class="sidebar-nav-link active">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Robot Dashboard
+                    </a>
+                    <a href="#" data-page="admin-station-dashboard" class="sidebar-nav-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        Station Dashboard
+                    </a>
+                    <a href="#" data-page="admin-history" class="sidebar-nav-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+                            <path d="M12 7v5l4 2"></path>
+                        </svg>
+                        Riwayat
+                    </a>
+                    <a href="#" data-page="admin-settings" class="sidebar-nav-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        Pengaturan
+                    </a>
+                </nav>
+                
+                <!-- User Info & Logout -->
+                <div class="sidebar-footer">
+                    <div class="sidebar-user">
+                        <div class="user-avatar">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name" id="admin-username">Admin</div>
+                            <div class="user-email" id="admin-email">admin@greenova.ai</div>
+                        </div>
+                    </div>
+                    
+                    <button id="logout-btn" class="btn btn-outline btn-full">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path>
+                        </svg>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Admin Top Bar -->
+        <header id="admin-header" class="admin-header hidden">
+            <div class="admin-header-content">
+                <div class="admin-header-left">
+                    <h2 id="admin-page-title">Dashboard</h2>
+                    <div id="admin-breadcrumb" class="admin-breadcrumb">
+                        <!-- Breadcrumb will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="admin-header-right">
+                    <button id="admin-theme-toggle" class="btn btn-ghost btn-icon">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                        </svg>
+                        <svg class="moon-icon hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    
+                    <button id="admin-notifications" class="btn btn-ghost btn-icon relative">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    
+                    <button id="admin-profile" class="admin-profile-btn">
+                        <div class="admin-avatar">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <span id="admin-profile-name">Admin</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 9l6 6 6-6"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="main-content">
+            <!-- Back Button (hidden by default) -->
+            <button id="back-btn" class="back-btn hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                </svg>
+                Kembali ke Home
+            </button>
+
+            <!-- Page Content Container -->
+            <div id="page-content" class="page-content">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </main>
+
+        <!-- Floating Robot Button -->
+        <button id="floating-robot-btn" class="floating-robot-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="11" height="10" rx="2" ry="2"></rect>
+                <circle cx="12" cy="5" r="2"></circle>
+                <path d="M12 7v4M8 21l-2-2M16 21l2-2"></path>
+            </svg>
+            <span class="tooltip">Tanya AI GREENOVA</span>
+        </button>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Login Admin</h2>
+                <button id="close-login-modal" class="modal-close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 18L6 6M6 18L18 6"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="login-form" class="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required placeholder="Masukkan username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="Masukkan password">
+                    </div>
+                    <div class="form-group">
+                        <div class="captcha-container">
+                            <label>Captcha</label>
+                            <div class="captcha-challenge">
+                                <span id="captcha-question"></span>
+                                <input type="number" id="captcha-answer" name="captcha-answer" required placeholder="Jawaban">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Login</button>
+                    <div class="login-help">
+                        <p>Default: admin / greenova123</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Modal for Ask GREENOVA -->
+    <div id="chat-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Ask GREENOVA AI</h2>
+                <button id="close-chat-modal" class="modal-close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 18L6 6M6 18L18 6"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="chat-container" class="chat-container">
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="chat-message bot-message">
+                            <div class="message-avatar">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <rect x="3" y="11" width="11" height="10" rx="2" ry="2"></rect>
+                                    <circle cx="12" cy="5" r="2"></circle>
+                                    <path d="M12 7v4M8 21l-2-2M16 21l2-2"></path>
+                                </svg>
+                            </div>
+                            <div class="message-content">
+                                <p>Hai! Saya GREENOVA AI. Saya siap membantu Anda dengan pertanyaan tentang kualitas udara, lingkungan, dan solusi teknologi hijau. Apa yang ingin Anda tanyakan?</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <input type="text" id="chat-input" placeholder="Ketik pertanyaan Anda di sini..." />
+                            <button id="send-message" class="send-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="suggested-questions">
+                            <span class="suggestion-label">Pertanyaan yang disarankan:</span>
+                            <button class="suggestion-btn">Bagaimana cara meningkatkan kualitas udara?</button>
+                            <button class="suggestion-btn">Apa itu PM2.5 dan dampaknya?</button>
+                            <button class="suggestion-btn">Tips tanaman untuk pembersih udara</button>
+                            <button class="suggestion-btn">Cara kerja robot GREENOVA?</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Profile Admin</h2>
+                <button id="close-profile-modal" class="modal-close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 18L6 6M6 18L18 6"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="profile-form" class="profile-form">
+                    <div class="form-group">
+                        <label for="profile-username">Username</label>
+                        <input type="text" id="profile-username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-email">Email</label>
+                        <input type="email" id="profile-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-password">Password Baru (kosongkan jika tidak ingin mengubah)</label>
+                        <input type="password" id="profile-password" name="password" placeholder="Password baru">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                        <button type="button" id="cancel-profile" class="btn btn-outline">Batal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Panel -->
+    <div id="notification-panel" class="notification-panel hidden">
+        <div class="notification-panel-backdrop"></div>
+        <div class="notification-panel-content">
+            <div class="notification-panel-header">
+                <h3>Notifikasi</h3>
+                <button id="close-notification-panel" class="modal-close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 18L6 6M6 18L18 6"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="notification-panel-body">
+                <div class="notification-item">
+                    <div class="notification-icon success">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                        </svg>
+                    </div>
+                    <div class="notification-content">
+                        <h4>Robot GRN-001 Online</h4>
+                        <p>Robot berhasil terhubung dan mulai monitoring</p>
+                        <span class="notification-time">5 menit lalu</span>
+                    </div>
+                </div>
+                
+                <div class="notification-item">
+                    <div class="notification-icon warning">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"></path>
+                        </svg>
+                    </div>
+                    <div class="notification-content">
+                        <h4>Kualitas Udara Menurun</h4>
+                        <p>AQI mencapai 85 - gunakan masker saat beraktivitas outdoor</p>
+                        <span class="notification-time">15 menit lalu</span>
+                    </div>
+                </div>
+                
+                <div class="notification-item">
+                    <div class="notification-icon info">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4M12 8h.01"></path>
+                        </svg>
+                    </div>
+                    <div class="notification-content">
+                        <h4>Maintenance Terjadwal</h4>
+                        <p>Robot GRN-002 akan menjalani maintenance besok pagi</p>
+                        <span class="notification-time">1 jam lalu</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

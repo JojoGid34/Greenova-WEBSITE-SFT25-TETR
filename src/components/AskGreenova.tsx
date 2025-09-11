@@ -91,11 +91,7 @@ Silakan tanya apa saja tentang data lingkungan! 😊`,
   const [showTypingAnimation, setShowTypingAnimation] = useState(false);
   
   // Menggunakan custom hook untuk mendapatkan data real-time
-  const { airReadings, plantReadings, loading, error } = useFirebaseData();
-
-  // Dapatkan data terbaru dari array
-  const latestAirReading = airReadings.length > 0 ? airReadings[0] : null;
-  const latestPlantReading = plantReadings.length > 0 ? plantReadings[0] : null;
+  const { robotData, tamanData, loading, error } = useFirebaseData();
 
   // Check untuk auto message saat component dimuat
   useEffect(() => {
@@ -143,21 +139,33 @@ Silakan tanya apa saja tentang data lingkungan! 😊`,
     
     // Gabungkan data sensor udara dan tanaman terbaru
     let combinedDataText = '';
-    if (latestAirReading) {
-      const calculatedAQI = latestAirReading.dust_pm25 ? Math.round((latestAirReading.dust_pm25 * 2.5) + (latestAirReading.gas_ppm * 0.5)) : 0;
+    
+    // Gunakan data robot dari Firebase Realtime Database
+    if (robotData) {
+      const calculatedAQI = robotData.aqi_lokal || 0;
       combinedDataText += `
 Data Udara Terbaru:
-- Suhu: ${latestAirReading.temperature || 'N/A'}°C
-- Kelembaban Udara: ${latestAirReading.humidity || 'N/A'}%
-- PM2.5: ${latestAirReading.dust_pm25 || 'N/A'} μg/m³
-- Gas PPM: ${latestAirReading.gas_ppm || 'N/A'} ppm
-- Kualitas Udara (AQI): ${calculatedAQI} (${getAQIStatus(calculatedAQI)})
+- Suhu: ${robotData.suhu || 'N/A'}°C
+- Kelembaban Udara: ${robotData.kelembaban || 'N/A'}%
+- PM2.5: ${robotData.debu || 'N/A'} μg/m³
+- Gas PPM: ${robotData.gas || 'N/A'} ppm
+- Kualitas Udara (AQI): ${calculatedAQI} (${robotData.aqi_status || getAQIStatus(calculatedAQI)})
+- Jarak Sensor: ${robotData.jarak || 'N/A'} cm
+- Status: ${robotData.isOnline ? 'Online' : 'Offline'}
       `.trim();
     }
-    if (latestPlantReading) {
-      combinedDataText += `\n\nData Tanaman Terbaru:
-- Kelembaban Tanaman A: ${latestPlantReading.moisture_percent || 'N/A'}% (${latestPlantReading.condition || 'N/A'})
-      `.trim();
+    // Gunakan data tanaman dari Firebase Realtime Database
+    if (tamanData && tamanData.plants.length > 0) {
+      combinedDataText += `\n\nData Tanaman Terbaru:`;
+      tamanData.plants.forEach(plant => {
+        combinedDataText += `
+- Tanaman ${plant.id}: ${plant.kelembaban}% - ${plant.kondisi}`;
+        if (plant.terakhir_siram) {
+          combinedDataText += ` (Terakhir disiram: ${plant.terakhir_siram})`;
+        }
+      });
+      combinedDataText += `
+- Total Tanaman Sehat: ${tamanData.healthyPlants}/${tamanData.totalPlants}`;
     }
     
     const combinedPrompt = `

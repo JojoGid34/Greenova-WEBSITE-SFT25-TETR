@@ -1,238 +1,172 @@
 import { useState, useEffect } from 'react';
-import * as tf from '@tensorflow/tfjs';
-import { Timestamp } from 'firebase/firestore';
+import { getDatabase, ref, onValue } from 'firebase/database';
 
-// Define the shape of a single air reading entry
-interface AirReading {
-  aq_number: number;
-  dust_pm25: number;
-  gas_ppm: number;
-  humidity: number;
-  temperature: number;
-  timestamp: Timestamp;
+interface RobotData {
+  kelembaban: number;
+  suhu: number;
+  jarak: number;
+  debu: number;
+  gas: number;
+  terakhir_update: string;
+  aqi_lokal: string; // Changed to string since it's status, not number
 }
 
-interface PlantReading {
-  moisture_percent: number;
-  temperature: number;
-  ph_level: number;
-  last_reading: Timestamp;
-  condition: string;
+interface PlantData {
+  kelembaban: number;
+  kondisi: string;
+  terakhir_siram?: string;
+  terakhir_update: string;
 }
 
-export interface PredictionData {
-  air_quality: {
-    next_hour: {
-      pm25: number;
-      gas_ppm: number;
-      humidity: number;
-      temperature: number;
-      aq_status: 'Baik' | 'Sedang' | 'Buruk';
-      confidence: number;
-    };
-    next_6_hours: {
-      pm25: number;
-      gas_ppm: number;
-      humidity: number;
-      temperature: number;
-      aq_status: 'Baik' | 'Sedang' | 'Buruk';
-      confidence: number;
-    };
-    next_24_hours: {
-      pm25: number;
-      gas_ppm: number;
-      humidity: number;
-      temperature: number;
-      aq_status: 'Baik' | 'Sedang' | 'Buruk';
-      confidence: number;
-    };
-  };
-  plant_health: {
-    next_watering: string;
-    growth_prediction: 'Optimal' | 'Baik' | 'Memerlukan Perhatian';
-    recommended_actions: string[];
-    moisture_forecast: number[];
-  };
-  environmental: {
-    weather_trend: 'Membaik' | 'Stabil' | 'Menurun';
-    pollution_sources: string[];
-    recommendations: string[];
+interface DashboardData {
+  robot: RobotData;
+  taman: {
+    A: PlantData;
+    B: PlantData;
   };
 }
 
-// Helper function to get AQI status from PM2.5 and gas_ppm
-const getAQStatus = (pm25: number, gas: number): 'Baik' | 'Sedang' | 'Buruk' => {
-  if (pm25 <= 35 && gas <= 50) return 'Baik';
-  if (pm25 <= 75 && gas <= 100) return 'Sedang';
-  return 'Buruk';
-};
+interface AIRecommendation {
+  environmental_advice: string;
+  plant_care_tips: string;
+  action_required: string;
+  safety_warning?: string;
+}
 
-// Main function to train and predict using TensorFlow.js
-const calculatePredictionsWithTFJS = async (airReadings: AirReading[], plantReadings: PlantReading[]): Promise<PredictionData> => {
-  console.log('Starting AI model training and prediction...');
-  
-  if (airReadings.length < 24) {
-    console.warn('Insufficient data for training. Skipping TF.js prediction.');
-    // Fallback to simpler logic if not enough data
-    return {
-      air_quality: {
-        next_hour: { pm25: 0, gas_ppm: 0, humidity: 0, temperature: 0, aq_status: 'Baik', confidence: 0 },
-        next_6_hours: { pm25: 0, gas_ppm: 0, humidity: 0, temperature: 0, aq_status: 'Baik', confidence: 0 },
-        next_24_hours: { pm25: 0, gas_ppm: 0, humidity: 0, temperature: 0, aq_status: 'Baik', confidence: 0 },
-      },
-      plant_health: { next_watering: 'N/A', growth_prediction: 'Memerlukan Perhatian', recommended_actions: [], moisture_forecast: [] },
-      environmental: { weather_trend: 'Menurun', pollution_sources: [], recommendations: [] },
-    };
-  }
+interface PredictionResult {
+  kelembaban_A_prediksi: number;
+  kelembaban_B_prediksi: number;
+  ai_recommendation: AIRecommendation;
+}
 
-  // Filter and sort the most recent 48 hours of data
-  const sortedAirData = airReadings
-    .filter(d => d.timestamp && d.dust_pm25 !== undefined && d.gas_ppm !== undefined)
-    .sort((a, b) => b.timestamp.seconds - a.timestamp.seconds)
-    .slice(0, 48)
-    .reverse();
-
-  const pm25Data = sortedAirData.map(d => d.dust_pm25);
-  const gasData = sortedAirData.map(d => d.gas_ppm);
-  const humidityData = sortedAirData.map(d => d.humidity);
-  const temperatureData = sortedAirData.map(d => d.temperature);
-
-  const trainModel = async (data: number[], epochs = 100, normalize = true): Promise<tf.Sequential> => {
-    const model = tf.sequential();
-    model.add(tf.layers.dense({ units: 1, inputShape: [1] }));
-
-    model.compile({
-      loss: 'meanSquaredError',
-      optimizer: tf.train.adam(0.01),
-    });
-
-    const xs = tf.tensor2d(data.map((_, i) => [i + 1]));
-    const ys = tf.tensor2d(data.map(val => [val]));
-
-    await model.fit(xs, ys, { epochs });
-
-    return model;
-  };
-  
-  try {
-    const pm25Model = await trainModel(pm25Data);
-    const gasModel = await trainModel(gasData);
-    const humidityModel = await trainModel(humidityData);
-    const temperatureModel = await trainModel(temperatureData);
-
-    const predictValue = (model: tf.Sequential, steps: number): number => {
-      const lastIndex = sortedAirData.length;
-      const pred = model.predict(tf.tensor2d([lastIndex + steps], [1, 1])) as tf.Tensor;
-      return Math.round(pred.dataSync()[0]);
-    };
-    
-    // Make predictions for each parameter
-    const nextHour = {
-      pm25: predictValue(pm25Model, 1),
-      gas_ppm: predictValue(gasModel, 1),
-      humidity: predictValue(humidityModel, 1),
-      temperature: predictValue(temperatureModel, 1),
-    };
-    
-    const next6Hours = {
-      pm25: predictValue(pm25Model, 6),
-      gas_ppm: predictValue(gasModel, 6),
-      humidity: predictValue(humidityModel, 6),
-      temperature: predictValue(temperatureModel, 6),
-    };
-    
-    const next24Hours = {
-      pm25: predictValue(pm25Model, 24),
-      gas_ppm: predictValue(gasModel, 24),
-      humidity: predictValue(humidityModel, 24),
-      temperature: predictValue(temperatureModel, 24),
-    };
-
-    const avgMoisture = plantReadings.reduce((sum, reading) => sum + (reading.moisture_percent || 0), 0) / plantReadings.length || 0;
-    const avgTemp = plantReadings.reduce((sum, reading) => sum + (reading.temperature || 0), 0) / plantReadings.length || 0;
-
-    const predictions: PredictionData = {
-      air_quality: {
-        next_hour: { ...nextHour, aq_status: getAQStatus(nextHour.pm25, nextHour.gas_ppm), confidence: 95 - Math.round(Math.random() * 5) },
-        next_6_hours: { ...next6Hours, aq_status: getAQStatus(next6Hours.pm25, next6Hours.gas_ppm), confidence: 80 - Math.round(Math.random() * 10) },
-        next_24_hours: { ...next24Hours, aq_status: getAQStatus(next24Hours.pm25, next24Hours.gas_ppm), confidence: 70 - Math.round(Math.random() * 10) },
-      },
-      plant_health: {
-        next_watering: new Date(Date.now() + (2 + Math.random() * 2) * 24 * 60 * 60 * 1000).toLocaleDateString('id-ID'),
-        growth_prediction: avgMoisture > 60 && avgTemp < 35 ? 'Optimal' : 'Memerlukan Perhatian',
-        recommended_actions: [
-          avgMoisture < 40 ? 'Tingkatkan penyiraman' : 'Pertahankan jadwal penyiraman',
-          avgTemp > 30 ? 'Berikan naungan tambahan' : 'Kondisi suhu optimal',
-          nextHour.pm25 > 50 ? 'Pasang filter udara' : 'Kualitas udara mendukung pertumbuhan'
-        ],
-        moisture_forecast: Array.from({ length: 7 }, (_, i) => 
-          Math.max(30, Math.min(90, avgMoisture + (Math.random() - 0.5) * 20))
-        )
-      },
-      environmental: {
-        weather_trend: next24Hours.pm25 < nextHour.pm25 ? 'Membaik' : 'Menurun',
-        pollution_sources: [
-          ...(nextHour.gas_ppm > 80 ? ['Kendaraan bermotor'] : []),
-          ...(nextHour.pm25 > 60 ? ['Aktivitas industri'] : []),
-          ...(nextHour.humidity < 40 ? ['Debu jalan'] : [])
-        ],
-        recommendations: [
-          'Pantau kualitas udara secara berkala',
-          nextHour.pm25 > 50 ? 'Aktifkan sistem filtrasi udara' : 'Buka jendela untuk sirkulasi udara',
-          nextHour.humidity < 50 ? 'Gunakan humidifier' : 'Kondisi kelembaban optimal'
-        ]
-      }
-    };
-    return predictions;
-  } catch (error) {
-    console.error("Error during TensorFlow.js prediction:", error);
-    throw error;
-  }
-};
-
-
-export const usePrediction = (airReadings: AirReading[] = [], plantReadings: PlantReading[] = []) => {
-  const [predictions, setPredictions] = useState<PredictionData | null>(null);
+export const usePrediction = () => {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchPredictions = async () => {
-      if (!airReadings || airReadings.length === 0) {
+    const db = getDatabase();
+    const dbRef = ref(db, '/');
+
+    const unsubscribe = onValue(dbRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const rawData = snapshot.val() as DashboardData;
+        setData(rawData);
+        
+        // Memanggil fungsi prediksi setelah data diterima
+        const predictedData = runPrediction(rawData);
+        setPrediction(predictedData);
+
         setLoading(false);
-        return;
+      } else {
+        setError('Data tidak ditemukan. Menunggu data dari perangkat.');
+        setLoading(false);
+        setData(null);
+        setPrediction(null);
       }
-      setLoading(true);
-      setError(null);
-      try {
-        const newPredictions = await calculatePredictionsWithTFJS(airReadings, plantReadings);
-        if (isMounted) {
-          setPredictions(newPredictions);
-          setLastUpdated(new Date());
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError('Gagal membuat prediksi. Silakan coba refresh.');
-          console.error(err);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-    
-    // Run initial prediction and then every hour
-    fetchPredictions();
-    const interval = setInterval(fetchPredictions, 60 * 60 * 1000); // Rerun prediction every 1 hour
+    }, (err) => {
+      setError(`Gagal memuat data: ${err.message}`);
+      setLoading(false);
+      setData(null);
+      setPrediction(null);
+    });
 
     return () => {
-      isMounted = false;
-      clearInterval(interval);
+      unsubscribe();
     };
-  }, [airReadings, plantReadings]);
+  }, []);
 
-  return { predictions, loading, error, lastUpdated };
+  // Fungsi untuk mensimulasikan hasil prediksi dan rekomendasi AI
+  const runPrediction = (currentData: DashboardData): PredictionResult => {
+    // Prediksi untuk kelembaban tanaman A: turun seiring waktu
+    const kelembabanAPrediksi = Math.max(0, currentData.taman.A.kelembaban * (1 - Math.random() * 0.05));
+
+    // Prediksi untuk kelembaban tanaman B: turun seiring waktu
+    const kelembabanBPrediksi = Math.max(0, currentData.taman.B.kelembaban * (1 - Math.random() * 0.05));
+
+    // Generate AI recommendations based on current data
+    const aiRecommendation = generateAIRecommendation(currentData);
+
+    return {
+      kelembaban_A_prediksi: parseFloat(kelembabanAPrediksi.toFixed(2)),
+      kelembaban_B_prediksi: parseFloat(kelembabanBPrediksi.toFixed(2)),
+      ai_recommendation: aiRecommendation,
+    };
+  };
+
+  // Generate AI recommendation based on sensor data
+  const generateAIRecommendation = (data: DashboardData): AIRecommendation => {
+    const { robot, taman } = data;
+    
+    // Environmental advice based on air quality
+    let environmental_advice = '';
+    let safety_warning = undefined;
+    
+    if (robot.aqi_lokal === 'baik') {
+      environmental_advice = 'Kualitas udara sangat baik! Waktu yang tepat untuk aktivitas outdoor dan olahraga. Manfaatkan udara segar untuk meningkatkan kesehatan.';
+    } else if (robot.aqi_lokal === 'sedang') {
+      environmental_advice = 'Kualitas udara masih dalam batas normal. Anda masih bisa beraktivitas outdoor, namun hindari olahraga berat dalam waktu lama.';
+    } else {
+      environmental_advice = 'Kualitas udara kurang baik. Disarankan untuk mengurangi aktivitas outdoor dan menggunakan masker saat keluar rumah.';
+      safety_warning = 'Perhatian: Tingkat polusi tinggi terdeteksi! Hindari aktivitas outdoor yang intens.';
+    }
+
+    // Plant care tips based on soil moisture
+    let plant_care_tips = '';
+    const avgMoisture = (taman.A.kelembaban + taman.B.kelembaban) / 2;
+    
+    if (avgMoisture >= 60) {
+      plant_care_tips = 'Kelembaban tanah optimal! Tanaman dalam kondisi baik. Lanjutkan jadwal penyiraman yang sudah ada.';
+    } else if (avgMoisture >= 30) {
+      plant_care_tips = 'Kelembaban tanah mulai menurun. Pertimbangkan untuk menambah frekuensi penyiraman atau periksa sistem irigasi.';
+    } else {
+      plant_care_tips = 'Tanah terlalu kering! Segera lakukan penyiraman intensif dan periksa sistem drainase serta penyiraman otomatis.';
+    }
+
+    // Action required based on overall conditions
+    let action_required = 'Tidak ada tindakan khusus diperlukan saat ini.';
+    
+    if (robot.aqi_lokal === 'buruk' || avgMoisture < 30) {
+      action_required = 'Tindakan segera diperlukan: ';
+      const actions = [];
+      
+      if (robot.aqi_lokal === 'buruk') {
+        actions.push('aktifkan air purifier atau ventilasi');
+      }
+      if (avgMoisture < 30) {
+        actions.push('lakukan penyiraman tanaman segera');
+      }
+      
+      action_required += actions.join(' dan ') + '.';
+    }
+
+    return {
+      environmental_advice,
+      plant_care_tips,
+      action_required,
+      safety_warning
+    };
+  };
+
+  // Function to generate auto question for Ask GREENOVA AI
+  const generateAutoQuestion = () => {
+    if (!data) return '';
+    
+    const { robot, taman } = data;
+    const question = `Berdasarkan data sensor terbaru:
+- Kualitas udara: ${robot.aqi_lokal}
+- Suhu: ${robot.suhu}°C
+- Kelembaban udara: ${robot.kelembaban}%
+- Debu PM2.5: ${robot.debu} μg/m³
+- Gas: ${robot.gas} ppm
+- Kelembaban tanaman A: ${taman.A.kelembaban}%
+- Kelembaban tanaman B: ${taman.B.kelembaban}%
+
+Apa saran dan rekomendasi yang mudah dipahami untuk menjaga kualitas udara dan kesehatan tanaman berdasarkan data ini?`;
+    
+    return question;
+  };
+
+  return { data, prediction, loading, error, generateAutoQuestion };
 };

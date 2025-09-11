@@ -1,6 +1,5 @@
 import { ReactNode, useState } from 'react';
 import { 
-  Settings,
   Bot,
   Menu,
   X,
@@ -8,26 +7,15 @@ import {
   Moon,
   LogOut,
   User,
-  Bell,
-  Search,
   BarChart3,
-  History,
-  Activity,
-  Wifi,
-  WifiOff,
-  Wrench,
   ChevronDown,
-  Droplets,
-  Tabs
+  Droplets
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
-import { Card, CardContent } from './ui/card';
-import { Input } from './ui/input';
 import { useTheme } from './ui/use-theme';
 import { UserProfileModal } from './UserProfileModal';
-import { NotificationPanel } from './NotificationPanel';
 import { useFirebaseData } from '../hooks/useFirebaseData';
 
 interface AdminLayoutProps {
@@ -49,8 +37,6 @@ interface AdminLayoutProps {
 const adminNavigation = [
   { id: 'admin-dashboard', icon: Bot, label: 'Robot Dashboard' },
   { id: 'admin-station-dashboard', icon: Droplets, label: 'Station Dashboard' },
-  { id: 'admin-history', icon: History, label: 'Riwayat' },
-  { id: 'admin-settings', icon: Settings, label: 'Pengaturan' },
 ];
 
 export function AdminLayout({ 
@@ -67,14 +53,11 @@ export function AdminLayout({
 }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
-  const [robotSearchQuery, setRobotSearchQuery] = useState('');
-  const [stationSearchQuery, setStationSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'robots' | 'stations'>('robots');
+  const [activeTab, setActiveTab] = useState<'robot' | 'station'>('robot');
   const { theme, toggleTheme } = useTheme();
   
-  // Get data from Firebase
-  const { robots, stations, loading } = useFirebaseData();
+  // Get data from Firebase Realtime Database
+  const { robotData, tamanData, loading, formatDateTime } = useFirebaseData();
 
   // Show loading state if data isn't ready yet
   if (loading) {
@@ -88,57 +71,17 @@ export function AdminLayout({
     );
   }
 
-  // Filter robots based on search query
-  const filteredRobots = (robots || []).filter(robot =>
-    robot.robot_id.toLowerCase().includes(robotSearchQuery.toLowerCase()) ||
-    robot.city_loc.toLowerCase().includes(robotSearchQuery.toLowerCase())
-  );
-
-  // Filter stations based on search query
-  const filteredStations = (stations || []).filter(station =>
-    station.station_id.toLowerCase().includes(stationSearchQuery.toLowerCase()) ||
-    station.city_loc.toLowerCase().includes(stationSearchQuery.toLowerCase())
-  );
-
-  const getStatusIcon = (isOnline: boolean = true) => {
-    if (isOnline) {
-      return <Wifi className="h-3 w-3 text-green-500" />;
-    } else {
-      return <WifiOff className="h-3 w-3 text-red-500" />;
-    }
+  // Status indicators
+  const robotStatus = {
+    online: robotData?.isOnline ? 1 : 0,
+    offline: robotData?.isOnline ? 0 : 1,
+    total: 1
   };
 
-  const getStatusColor = (isOnline: boolean = true) => {
-    return isOnline ? 'bg-green-500' : 'bg-red-500';
-  };
-
-  const getStationStatusIcon = (status: boolean = false) => {
-    if (status) {
-      return <Droplets className="h-3 w-3 text-blue-500" />;
-    } else {
-      return <Droplets className="h-3 w-3 text-gray-500" />;
-    }
-  };
-
-  const getStationStatusColor = (status: boolean = false) => {
-    return status ? 'bg-blue-500' : 'bg-gray-500';
-  };
-
-  // Count robots by status
-  const robotStats = {
-    online: robots?.length || 0,
-    offline: 0,
-    maintenance: 0,
-    total: robots?.length || 0
-  };
-
-  // Count stations by status
-  const stationStats = {
-    active: stations?.filter(s => s.watering_status).length || 0,
-    inactive: stations?.filter(s => !s.watering_status).length || 0,
-    maintenance: 0,
-    offline: 0,
-    total: stations?.length || 0
+  const stationStatus = {
+    active: tamanData?.healthyPlants || 0,
+    inactive: tamanData ? tamanData.totalPlants - tamanData.healthyPlants : 0,
+    total: tamanData?.totalPlants || 0
   };
 
   return (
@@ -176,28 +119,28 @@ export function AdminLayout({
             <div className="flex border rounded-lg overflow-hidden">
               <button
                 className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
-                  activeTab === 'robots' 
+                  activeTab === 'robot' 
                     ? 'bg-primary text-primary-foreground' 
                     : 'bg-muted hover:bg-muted/80'
                 }`}
-                onClick={() => setActiveTab('robots')}
+                onClick={() => setActiveTab('robot')}
               >
                 <div className="flex items-center justify-center gap-2">
                   <Bot className="h-3 w-3" />
-                  <span>Robots ({robotStats.total})</span>
+                  <span>Robot ({robotStatus.total})</span>
                 </div>
               </button>
               <button
                 className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
-                  activeTab === 'stations' 
+                  activeTab === 'station' 
                     ? 'bg-primary text-primary-foreground' 
                     : 'bg-muted hover:bg-muted/80'
                 }`}
-                onClick={() => setActiveTab('stations')}
+                onClick={() => setActiveTab('station')}
               >
                 <div className="flex items-center justify-center gap-2">
                   <Droplets className="h-3 w-3" />
-                  <span>Stations ({stationStats.total})</span>
+                  <span>Station ({stationStatus.total})</span>
                 </div>
               </button>
             </div>
@@ -206,141 +149,115 @@ export function AdminLayout({
           {/* Statistics */}
           <div className="p-4 border-b border-border">
             <h3 className="text-sm font-medium mb-3">
-              {activeTab === 'robots' ? 'Robot Status' : 'Station Status'}
+              {activeTab === 'robot' ? 'Robot Status' : 'Station Status'}
             </h3>
-            {activeTab === 'robots' ? (
+            {activeTab === 'robot' ? (
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Online: {robotStats.online}</span>
+                  <span>Online: {robotStatus.online}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span>Offline: {robotStats.offline}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <span>Maintenance: {robotStats.maintenance}</span>
+                  <span>Offline: {robotStatus.offline}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span>Total: {robotStats.total}</span>
+                  <span>Total: {robotStatus.total}</span>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Active: {stationStats.active}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  <span>Inactive: {stationStats.inactive}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <span>Maintenance: {stationStats.maintenance}</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Healthy: {stationStatus.active}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span>Offline: {stationStats.offline}</span>
+                  <span>Unhealthy: {stationStatus.inactive}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <span>Total: {stationStatus.total}</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Search */}
-          <div className="p-4 border-b border-border">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={activeTab === 'robots' ? "Cari robot..." : "Cari station..."}
-                value={activeTab === 'robots' ? robotSearchQuery : stationSearchQuery}
-                onChange={(e) => activeTab === 'robots' ? setRobotSearchQuery(e.target.value) : setStationSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Device List */}
+          {/* Device Status */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-4">
-              {activeTab === 'robots' ? (
+              {activeTab === 'robot' ? (
                 <>
-                  <h3 className="text-sm font-medium mb-3">Daftar Robot ({filteredRobots.length})</h3>
+                  <h3 className="text-sm font-medium mb-3">Robot Status</h3>
                   <div className="space-y-2">
-                    {filteredRobots.map((robot) => (
-                      <Button
-                        key={robot.robot_id}
-                        variant={selectedRobotId === robot.robot_id ? "default" : "ghost"}
-                        className={`w-full justify-start p-3 h-auto ${
-                          selectedRobotId === robot.robot_id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-accent hover:text-accent-foreground'
-                        }`}
-                        onClick={() => {
-                          onRobotSelect(robot.robot_id);
-                          setIsSidebarOpen(false);
-                        }}
-                      >
-                        <div className="flex items-start gap-3 w-full">
-                          <div className="relative">
-                            <Bot className="h-5 w-5" />
-                            <div className={`absolute -top-1 -right-1 w-3 h-3 ${getStatusColor(true)} rounded-full animate-pulse`}></div>
-                          </div>
-                          <div className="flex-1 text-left">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-sm">{robot.robot_id}</span>
-                              {getStatusIcon(true)}
-                            </div>
-                            <p className="text-xs opacity-60 mt-1">{robot.city_loc}</p>
-                            <div className="flex items-center gap-3 mt-2 text-xs">
-                              <span>🔋 {robot.battery}%</span>
-                              <span>📶 {robot.signal_strength}%</span>
-                            </div>
-                          </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <div className="relative">
+                          <Bot className="h-5 w-5" />
+                          <div className={`absolute -top-1 -right-1 w-3 h-3 ${
+                            robotData?.isOnline ? 'bg-green-500' : 'bg-red-500'
+                          } rounded-full animate-pulse`}></div>
                         </div>
-                      </Button>
-                    ))}
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">GREENOVA Robot</span>
+                            <Badge variant={robotData?.isOnline ? "default" : "destructive"}>
+                              {robotData?.isOnline ? 'Online' : 'Offline'}
+                            </Badge>
+                          </div>
+                          {robotData && (
+                            <>
+                              <p className="text-xs opacity-60 mt-1">
+                                Last: {formatDateTime(robotData.terakhir_update)}
+                              </p>
+                              <div className="flex items-center gap-3 mt-2 text-xs">
+                                <span>🌡️ {robotData.suhu}°C</span>
+                                <span>💧 {robotData.kelembaban}%</span>
+                                <span>AQI: {robotData.aqi_lokal}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </>
               ) : (
                 <>
-                  <h3 className="text-sm font-medium mb-3">Daftar Station ({filteredStations.length})</h3>
+                  <h3 className="text-sm font-medium mb-3">Station Status</h3>
                   <div className="space-y-2">
-                    {filteredStations.map((station) => (
-                      <Button
-                        key={station.station_id}
-                        variant={selectedStationId === station.station_id ? "default" : "ghost"}
-                        className={`w-full justify-start p-3 h-auto ${
-                          selectedStationId === station.station_id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-accent hover:text-accent-foreground'
-                        }`}
-                        onClick={() => {
-                          onStationSelect(station.station_id);
-                          setIsSidebarOpen(false);
-                        }}
-                      >
-                        <div className="flex items-start gap-3 w-full">
-                          <div className="relative">
-                            <Droplets className="h-5 w-5" />
-                            <div className={`absolute -top-1 -right-1 w-3 h-3 ${getStationStatusColor(station.watering_status)} rounded-full animate-pulse`}></div>
-                          </div>
-                          <div className="flex-1 text-left">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-sm">{station.station_id}</span>
-                              {getStationStatusIcon(station.watering_status)}
-                            </div>
-                            <p className="text-xs opacity-60 mt-1">{station.city_loc}</p>
-                            <div className="flex items-center gap-3 mt-2 text-xs">
-                              <span>🔋 {station.battery}%</span>
-                              <span>📶 {station.signal_strength}%</span>
-                            </div>
-                          </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <div className="relative">
+                          <Droplets className="h-5 w-5" />
+                          <div className={`absolute -top-1 -right-1 w-3 h-3 ${
+                            tamanData?.healthyPlants === tamanData?.totalPlants ? 'bg-green-500' : 'bg-yellow-500'
+                          } rounded-full animate-pulse`}></div>
                         </div>
-                      </Button>
-                    ))}
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">GREENOVA Station</span>
+                            <Badge variant={
+                              tamanData?.healthyPlants === tamanData?.totalPlants ? "default" : "secondary"
+                            }>
+                              {tamanData?.healthyPlants}/{tamanData?.totalPlants} Healthy
+                            </Badge>
+                          </div>
+                          {tamanData && (
+                            <>
+                              <p className="text-xs opacity-60 mt-1">
+                                Last: {formatDateTime(tamanData.lastUpdate)}
+                              </p>
+                              <div className="flex items-center gap-3 mt-2 text-xs">
+                                <span>🌱 {tamanData.totalPlants} Plants</span>
+                                <span>✅ {tamanData.healthyPlants} Healthy</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
@@ -392,14 +309,14 @@ export function AdminLayout({
             <h2 className="text-xl font-semibold">
               {adminNavigation.find(nav => nav.id === currentPage)?.label || 'Dashboard'}
             </h2>
-            {selectedRobotId && (
+            {activeTab === 'robot' && robotData && (
               <Badge variant="outline" className="text-xs">
-                {robots?.find(r => r.robot_id === selectedRobotId)?.robot_id || selectedRobotId}
+                Robot Status: {robotData.isOnline ? 'Online' : 'Offline'}
               </Badge>
             )}
-            {selectedStationId && (
+            {activeTab === 'station' && tamanData && (
               <Badge variant="outline" className="text-xs">
-                {stations?.find(s => s.station_id === selectedStationId)?.station_id || selectedStationId}
+                Plants: {tamanData.healthyPlants}/{tamanData.totalPlants} Healthy
               </Badge>
             )}
           </div>
@@ -417,17 +334,6 @@ export function AdminLayout({
               ) : (
                 <Moon className="h-4 w-4" />
               )}
-            </Button>
-
-            {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsNotificationPanelOpen(true)}
-              className="relative h-9 w-9"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></span>
             </Button>
 
             {/* User Profile */}
@@ -450,7 +356,7 @@ export function AdminLayout({
               variant="ghost"
               size="icon"
               onClick={onLogout}
-              className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50"
+              className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -469,12 +375,6 @@ export function AdminLayout({
         onClose={() => setIsProfileModalOpen(false)}
         userInfo={userInfo}
         onUserUpdate={onUserUpdate}
-      />
-
-      {/* Notification Panel */}
-      <NotificationPanel
-        isOpen={isNotificationPanelOpen}
-        onClose={() => setIsNotificationPanelOpen(false)}
       />
     </div>
   );

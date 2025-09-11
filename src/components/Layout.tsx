@@ -12,8 +12,7 @@ import {
   Cog,
   Wind,
   MapPin,
-  MessageCircle,
-  LogIn
+  MessageCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useTheme } from './ui/use-theme';
@@ -22,7 +21,6 @@ interface LayoutProps {
   children: ReactNode;
   currentPage: string;
   onPageChange: (page: string) => void;
-  onLogin?: () => void;
 }
 
 const navigationItems = [
@@ -31,11 +29,12 @@ const navigationItems = [
   { id: 'air-quality', icon: Wind, label: 'Air Quality' },
   { id: 'how-it-works', icon: Cog, label: 'How It Works' },
   { id: 'education', icon: BookOpen, label: 'Edukasi' },
+  { id: 'location-settings', icon: MapPin, label: 'Pengaturan Lokasi' },
   { id: 'about', icon: Info, label: 'About' },
   { id: 'support', icon: Heart, label: 'Support' },
 ];
 
-export function Layout({ children, currentPage, onPageChange, onLogin }: LayoutProps) {
+export function Layout({ children, currentPage, onPageChange }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -97,17 +96,8 @@ export function Layout({ children, currentPage, onPageChange, onLogin }: LayoutP
             </ul>
           </nav>
 
-          {/* Login Button */}
+          {/* Controls */}
           <div className="p-4 border-t border-border space-y-3">
-            <Button 
-              onClick={onLogin}
-              className="w-full"
-              variant="outline"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Login Admin
-            </Button>
-            
             {/* Theme Toggle */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Tema</span>

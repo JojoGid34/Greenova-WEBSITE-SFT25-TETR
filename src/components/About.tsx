@@ -16,7 +16,11 @@ import {
   Lightbulb,
   Award,
   Shield,
-  UserPlus
+  UserPlus,
+  Bot,
+  Droplets,
+  Monitor,
+  Cpu
 } from 'lucide-react';
 
 interface TeamMember {
@@ -33,32 +37,32 @@ interface AboutProps {
 
 const teamMembers: TeamMember[] = [
   {
-    name: "Jojo Gid",
+    name: "Jonathan Gideon",
     role: "Founder & Developer Utama",
-    bio: "Passionate tentang teknologi AI dan robotika untuk solusi pertanian berkelanjutan. Memiliki pengalaman 5+ tahun dalam pengembangan sistem IoT dan machine learning.",
+    bio: "Passionate tentang teknologi AI dan sistem monitoring lingkungan. Memiliki pengalaman 5+ tahun dalam pengembangan sistem IoT dan machine learning untuk solusi environmental monitoring.",
     avatar: "https://static.vecteezy.com/system/resources/previews/026/630/551/non_2x/profile-icon-symbol-design-illustration-vector.jpg",
     expertise: ["AI/ML", "IoT Systems", "Full-Stack Development"]
   },
   {
-    name: "Nando",
+    name: "Hernando Alexander",
     role: "Hardware Engineer",
-    bio: "Spesialis dalam pengembangan sistem embedded dan sensor integration. Bertanggung jawab atas desain dan implementasi hardware robot GREENOVA yang handal dan efisien.",
+    bio: "Spesialis dalam pengembangan sistem embedded dan sensor integration. Bertanggung jawab atas desain dan implementasi hardware robot dan station GREENOVA yang handal dan efisien.",
     avatar: "https://static.vecteezy.com/system/resources/previews/026/630/551/non_2x/profile-icon-symbol-design-illustration-vector.jpg",
-    expertise: ["Embedded Systems", "Sensor Integration", "Circuit Design"]
+    expertise: ["Embedded Systems", "Sensor Integration", "ESP32 Development"]
   },
   {
-    name: "Kenneth",
+    name: "Jeremy Kenneth",
     role: "AI/ML Specialist",
-    bio: "Expert dalam computer vision dan machine learning untuk deteksi tanaman dan analisis lingkungan. Mengembangkan model Teachable Machine yang digunakan robot untuk decision making.",
+    bio: "Expert dalam TensorFlow.js dan machine learning untuk prediksi lingkungan dan analisis data sensor. Mengembangkan model AI untuk forecasting dan decision making sistem GREENOVA.",
     avatar: "https://static.vecteezy.com/system/resources/previews/026/630/551/non_2x/profile-icon-symbol-design-illustration-vector.jpg",
-    expertise: ["Computer Vision", "Machine Learning", "Data Analysis"]
+    expertise: ["TensorFlow.js", "Data Analysis", "Predictive Modeling"]
   },
   {
-    name: "Louis", 
+    name: "Louis Owen", 
     role: "UX/UI Designer",
-    bio: "Menciptakan pengalaman pengguna yang intuitif dan menarik untuk dashboard GREENOVA. Fokus pada desain yang user-centered dan accessibility untuk semua kalangan pengguna.",
+    bio: "Menciptakan pengalaman pengguna yang intuitif dan menarik untuk dashboard GREENOVA. Fokus pada desain yang user-centered dan accessibility untuk visualisasi data lingkungan.",
     avatar: "https://static.vecteezy.com/system/resources/previews/026/630/551/non_2x/profile-icon-symbol-design-illustration-vector.jpg",
-    expertise: ["UI/UX Design", "User Research", "Design Systems"]
+    expertise: ["UI/UX Design", "Data Visualization", "Design Systems"]
   }
 ];
 
@@ -66,17 +70,17 @@ const features = [
   {
     icon: Target,
     title: "Misi Kami",
-    description: "Mengembangkan teknologi robotika AI yang membuat pertanian lebih efisien, berkelanjutan, dan mudah diakses untuk semua."
+    description: "Menyediakan teknologi monitoring lingkungan yang mudah diakses dan dipahami masyarakat untuk membantu membuat keputusan yang lebih baik tentang kondisi lingkungan sekitar."
   },
   {
     icon: Lightbulb,
     title: "Inovasi",
-    description: "Menggabungkan kecerdasan buatan, sensor IoT, dan computer vision untuk menciptakan solusi pertanian otomatis yang cerdas."
+    description: "Menggabungkan AI, sensor IoT, dan sistem monitoring real-time untuk memberikan informasi lingkungan yang akurat dan mudah dipahami melalui teknologi GREENOVA."
   },
   {
     icon: Award,
     title: "Komitmen",
-    description: "Berkomitmen untuk mengurangi penggunaan air dan pestisida melalui teknologi precision agriculture yang ramah lingkungan."
+    description: "Berkomitmen membantu masyarakat lebih memahami dan peduli terhadap kondisi lingkungan melalui teknologi yang inovatif dan edukasi yang mudah dipahami."
   }
 ];
 
@@ -94,17 +98,17 @@ export function About({ onNavigate }: AboutProps) {
       <div className="text-center space-y-6">
         <div className="space-y-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            About Us
+            About GREENOVA
           </h1>
           <div className="max-w-4xl mx-auto space-y-4">
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Greenova AI</strong> adalah proyek inovatif yang menggabungkan kecerdasan buatan, 
-              robotika, dan teknologi IoT untuk menciptakan solusi pertanian yang cerdas dan berkelanjutan. 
+              <strong className="text-foreground">GREENOVA</strong> adalah sistem monitoring lingkungan yang menggabungkan 
+              robot dan station pintar untuk memantau kualitas udara dan kondisi tanaman secara real-time. 
             </p>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Dengan menggunakan ESP32-CAM dan model Teachable Machine, robot GREENOVA mampu memantau 
-              lingkungan secara real-time, mendeteksi kebutuhan tanaman, dan melakukan penyiraman otomatis 
-              yang tepat sasaran.
+              Dengan menggunakan ESP32 dan teknologi TensorFlow.js, GREENOVA membantu masyarakat memahami 
+              kondisi lingkungan di sekitar mereka dengan mudah melalui data yang akurat dan informasi AI 
+              yang mudah dipahami.
             </p>
           </div>
         </div>
@@ -129,15 +133,91 @@ export function About({ onNavigate }: AboutProps) {
 
       <Separator className="my-12" />
 
+      {/* GREENOVA System Overview */}
+      <div className="space-y-8">
+        <div className="text-center space-y-4">
+          <h2 className="text-3xl md:text-4xl font-bold">Sistem GREENOVA</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Dua perangkat pintar yang bekerja sama untuk monitoring lingkungan komprehensif
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <Card className="p-6 hover:shadow-lg transition-shadow">
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                  <Bot className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold">GREENOVA Robot</h3>
+              </div>
+              
+              <p className="text-muted-foreground">
+                Robot monitoring kualitas udara dengan multiple sensor untuk pembacaan real-time
+              </p>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Sensor yang digunakan:</h4>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li>• Sensor Suhu & Kelembaban Udara</li>
+                  <li>• Sensor Debu (PM2.5)</li>
+                  <li>• Sensor Gas</li>
+                  <li>• Sensor Jarak untuk navigasi</li>
+                </ul>
+              </div>
+              
+              <div className="pt-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                  Update database setiap beberapa detik
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="p-6 hover:shadow-lg transition-shadow">
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-50">
+                  <Droplets className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold">GREENOVA Station</h3>
+              </div>
+              
+              <p className="text-muted-foreground">
+                Station monitoring tanaman dengan sistem otomatis untuk perawatan tanaman
+              </p>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Fitur utama:</h4>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li>• Sensor Kelembaban Tanah</li>
+                  <li>• Sistem Penyiraman Otomatis ESP32</li>
+                  <li>• Monitoring Kondisi Tanaman</li>
+                  <li>• Real-time data transmission</li>
+                </ul>
+              </div>
+              
+              <div className="pt-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                  Penyiraman otomatis tanaman kering
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Separator className="my-12" />
+
       {/* Team Section */}
       <div className="space-y-8">
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Users className="h-8 w-8 text-primary" />
-            <h2 className="text-3xl md:text-4xl font-bold">Tim Kami</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">Tim TETR</h2>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Tim multidisiplin yang berdedikasi untuk menghadirkan teknologi pertanian masa depan
+            Tim multidisiplin yang berdedikasi untuk menghadirkan teknologi monitoring lingkungan
           </p>
         </div>
 
@@ -196,23 +276,23 @@ export function About({ onNavigate }: AboutProps) {
         <div className="text-center space-y-4">
           <h2 className="text-3xl md:text-4xl font-bold">Teknologi yang Kami Gunakan</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Stack teknologi modern untuk solusi pertanian yang handal dan scalable
+            Stack teknologi modern untuk sistem monitoring lingkungan yang handal dan scalable
           </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {[
-            { name: "ESP32-CAM", desc: "Microcontroller & Camera" },
-            { name: "Teachable Machine", desc: "AI Model Training" },
-            { name: "React + TypeScript", desc: "Frontend Dashboard" },
-            { name: "IoT Sensors", desc: "Environmental Monitoring" },
-            { name: "Computer Vision", desc: "Plant Detection" },
-            { name: "Real-time Data", desc: "Live Monitoring" }
+            { name: "ESP32", desc: "Microcontroller System", icon: Cpu },
+            { name: "TensorFlow.js", desc: "AI Predictions", icon: Bot },
+            { name: "React + TypeScript", desc: "Frontend Dashboard", icon: Monitor },
+            { name: "Multiple Sensors", desc: "Environmental Monitoring", icon: Target },
+            { name: "Firebase Realtime", desc: "Real-time Database", icon: ExternalLink },
+            { name: "Real-time Updates", desc: "Live Data Streaming", icon: Lightbulb }
           ].map((tech, index) => (
             <Card key={index} className="p-4 text-center hover:shadow-md transition-shadow">
               <CardContent className="space-y-2">
                 <div className="w-8 h-8 mx-auto bg-primary/10 rounded-lg flex items-center justify-center">
-                  <ExternalLink className="h-4 w-4 text-primary" />
+                  <tech.icon className="h-4 w-4 text-primary" />
                 </div>
                 <h4 className="font-medium text-sm">{tech.name}</h4>
                 <p className="text-xs text-muted-foreground">{tech.desc}</p>
@@ -253,7 +333,7 @@ export function About({ onNavigate }: AboutProps) {
             </div>
             <h4 className="font-medium">Telepon</h4>
             <a 
-              href="tel:+6281234567890" 
+              href="tel:+6289643010219" 
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               +62 896-4301-0219
@@ -320,7 +400,7 @@ export function About({ onNavigate }: AboutProps) {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button 
               className="gap-2"
-              onClick={() => window.open('mailto:hello@greenova.ai?subject=Kolaborasi GREENOVA AI&body=Halo tim GREENOVA,%0A%0ASaya tertarik untuk berkolaborasi dengan tim GREENOVA AI.%0A%0ANama:%0AInstansi/Organisasi:%0AEmail:%0ATujuan kolaborasi:%0A%0ATerima kasih.', '_blank')}
+              onClick={() => window.open('mailto:hello@greenova.ai?subject=Kolaborasi GREENOVA&body=Halo tim GREENOVA,%0A%0ASaya tertarik untuk berkolaborasi dengan tim GREENOVA.%0A%0ANama:%0AInstansi/Organisasi:%0AEmail:%0ATujuan kolaborasi:%0A%0ATerima kasih.', '_blank')}
             >
               <Mail className="h-4 w-4" />
               Kirim Email
@@ -328,10 +408,10 @@ export function About({ onNavigate }: AboutProps) {
             <Button 
               variant="outline" 
               className="gap-2"
-              onClick={() => window.open('https://github.com/greenova-ai/portfolio', '_blank')}
+              onClick={() => onNavigate('how-it-works')}
             >
               <ExternalLink className="h-4 w-4" />
-              Lihat Portfolio
+              Cara Kerja GREENOVA
             </Button>
           </div>
         </div>
@@ -342,7 +422,7 @@ export function About({ onNavigate }: AboutProps) {
             <Shield className="h-8 w-8 text-primary mx-auto" />
             <h3 className="font-medium">Butuh Akses Admin Dashboard?</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Ajukan akun admin untuk mengakses dashboard monitoring robot dan analitik data real-time
+              Ajukan akun admin untuk mengakses dashboard monitoring robot dan station real-time
             </p>
           </div>
           <Button 

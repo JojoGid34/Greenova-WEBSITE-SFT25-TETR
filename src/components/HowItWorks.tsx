@@ -1,384 +1,531 @@
-import { Card, CardContent } from './ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { 
   Bot,
-  Wifi,
-  Cloud,
-  Database,
-  Brain,
-  Smartphone,
-  Laptop,
-  Bell,
-  Activity,
-  Thermometer,
   Droplets,
-  Gauge,
-  Radio,
-  Server,
+  Cpu,
+  Database,
+  Monitor,
+  Zap,
   BarChart3,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle2,
+  CheckCircle,
   ArrowRight,
   ArrowDown,
-  Zap,
-  Eye,
-  Shield,
-  Clock
+  Thermometer,
+  Wind,
+  Gauge,
+  TreePine,
+  Wifi,
+  Brain,
+  Activity,
+  Clock,
+  TrendingUp,
+  Target,
+  Settings
 } from 'lucide-react';
 
-const steps = [
+const workflowSteps = [
   {
-    number: "01",
-    title: "Pengumpulan Data Sensor",
-    subtitle: "Data Collection",
-    description: "Robot Greenova AI, yang dilengkapi dengan berbagai sensor (suhu, kelembaban, pH tanah, dll.), mengumpulkan data lingkungan dari lokasi yang telah ditentukan.",
-    icon: Bot,
-    color: "bg-blue-500",
-    features: [
-      { icon: Thermometer, label: "Sensor Suhu", value: "±0.1°C" },
-      { icon: Droplets, label: "Kelembaban", value: "0-100%" },
-      { icon: Gauge, label: "pH Tanah", value: "0-14 pH" },
-      { icon: Activity, label: "Real-time", value: "24/7" }
-    ],
-    visual: "robot-sensors"
+    id: 1,
+    title: "Data Collection",
+    description: "Robot dan Station mengumpulkan data sensor secara real-time",
+    icon: <Activity className="h-6 w-6" />,
+    details: [
+      "Robot membaca sensor suhu, kelembaban udara, debu (PM2.5), dan gas",
+      "Station membaca sensor kelembaban tanah dari tanaman",
+      "Data dikumpulkan setiap beberapa detik secara kontinyu",
+      "Semua pembacaan sensor dikirim ke ESP32 controller"
+    ]
   },
   {
-    number: "02", 
-    title: "Pengiriman Data Real-time",
-    subtitle: "Data Transmission",
-    description: "Data yang terkumpul dikirim secara instan melalui Wi-Fi atau jaringan seluler ke server backend menggunakan protokol MQTT.",
-    icon: Wifi,
-    color: "bg-green-500",
-    features: [
-      { icon: Wifi, label: "Wi-Fi 802.11", value: "2.4/5GHz" },
-      { icon: Radio, label: "MQTT Protocol", value: "Secure" },
-      { icon: Zap, label: "Latency", value: "<100ms" },
-      { icon: Shield, label: "Encryption", value: "TLS 1.3" }
-    ],
-    visual: "data-transmission"
+    id: 2,
+    title: "Data Transmission",
+    description: "ESP32 mengirim data ke Firebase Realtime Database",
+    icon: <Wifi className="h-6 w-6" />,
+    details: [
+      "ESP32 pada robot dan station terhubung ke WiFi",
+      "Data sensor dikirim ke Firebase Realtime Database",
+      "Update database dilakukan setiap beberapa detik",
+      "Sistem backup untuk memastikan data tidak hilang"
+    ]
   },
   {
-    number: "03",
-    title: "Analisis Data di Server", 
-    subtitle: "Processing & Analysis",
-    description: "Server backend (Flask) memproses data, menyimpannya di database, dan menganalisisnya dengan model AI untuk mendeteksi anomali atau pola penting.",
-    icon: Brain,
-    color: "bg-purple-500",
-    features: [
-      { icon: Server, label: "Flask Backend", value: "Python" },
-      { icon: Database, label: "Database", value: "PostgreSQL" },
-      { icon: Brain, label: "AI Model", value: "TensorFlow" },
-      { icon: TrendingUp, label: "Analytics", value: "Real-time" }
-    ],
-    visual: "ai-processing"
+    id: 3,
+    title: "AI Processing",
+    description: "TensorFlow.js melakukan analisis dan prediksi data",
+    icon: <Brain className="h-6 w-6" />,
+    details: [
+      "TensorFlow.js menganalisis pola data historis",
+      "Membuat prediksi kondisi lingkungan ke depan",
+      "Menghitung Air Quality Index (AQI) otomatis",
+      "AI memberikan rekomendasi berdasarkan kondisi"
+    ]
   },
   {
-    number: "04",
-    title: "Informasi untuk Anda",
-    subtitle: "Visualization & Notification", 
-    description: "Data yang telah dianalisis divisualisasikan dalam dashboard yang interaktif dan mudah dipahami. Sistem juga akan mengirimkan notifikasi penting, seperti peringatan dini bencana, ke perangkat Anda.",
-    icon: Smartphone,
-    color: "bg-orange-500",
-    features: [
-      { icon: BarChart3, label: "Dashboard", value: "Interactive" },
-      { icon: Bell, label: "Notifikasi", value: "Push/Email" },
-      { icon: Eye, label: "Visualisasi", value: "Real-time" },
-      { icon: AlertTriangle, label: "Peringatan", value: "Otomatis" }
-    ],
-    visual: "dashboard-notification"
+    id: 4,
+    title: "Real-time Visualization",
+    description: "Dashboard menampilkan data dan insights secara real-time",
+    icon: <Monitor className="h-6 w-6" />,
+    details: [
+      "Dashboard web menampilkan data terbaru",
+      "Grafik dan chart yang mudah dipahami",
+      "Notifikasi alert untuk kondisi berbahaya",
+      "Interface yang user-friendly untuk semua kalangan"
+    ]
+  },
+  {
+    id: 5,
+    title: "Automated Actions",
+    description: "Station melakukan tindakan otomatis berdasarkan data",
+    icon: <Settings className="h-6 w-6" />,
+    details: [
+      "Station menyiram tanaman kering secara otomatis",
+      "ESP32 mengontrol sistem penyiraman",
+      "Penyiraman berdasarkan threshold kelembaban tanah",
+      "Log aktivitas penyiraman disimpan ke database"
+    ]
   }
 ];
 
-export function HowItWorks() {
-  return (
-    <div className="space-y-16">
-      {/* Hero Section */}
-      <div className="text-center space-y-6">
-        <div className="space-y-4">
-          <Badge className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white border-0">
-            <Bot className="h-4 w-4 mr-2" />
-            Sistem Greenova AI
-          </Badge>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Bagaimana Cara Kerjanya?
-          </h1>
-          <div className="max-w-3xl mx-auto space-y-4">
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Sistem robot Greenova AI bekerja melalui 4 tahapan utama untuk memberikan solusi pertanian pintar yang efisien dan berkelanjutan.
-            </p>
-            <p className="text-base text-muted-foreground">
-              Dari pengumpulan data sensor hingga notifikasi cerdas - mari pelajari alur kerja teknologi revolusioner ini.
-            </p>
-          </div>
-        </div>
-      </div>
+const robotFeatures = [
+  {
+    icon: <Thermometer className="h-5 w-5" />,
+    title: "Sensor Suhu",
+    description: "Monitoring suhu udara untuk analisis kualitas lingkungan"
+  },
+  {
+    icon: <Droplets className="h-5 w-5" />,
+    title: "Sensor Kelembaban Udara",
+    description: "Mengukur kelembaban udara untuk comfort index"
+  },
+  {
+    icon: <Wind className="h-5 w-5" />,
+    title: "Sensor Debu PM2.5",
+    description: "Deteksi partikel debu halus yang berbahaya bagi kesehatan"
+  },
+  {
+    icon: <Gauge className="h-5 w-5" />,
+    title: "Sensor Gas",
+    description: "Monitoring gas berbahaya di udara"
+  }
+];
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {[
-          { icon: Clock, label: "Response Time", value: "<100ms", color: "text-blue-500" },
-          { icon: Shield, label: "Security", value: "99.9%", color: "text-green-500" },
-          { icon: Activity, label: "Uptime", value: "24/7", color: "text-purple-500" },
-          { icon: CheckCircle2, label: "Accuracy", value: "95%+", color: "text-orange-500" }
-        ].map((stat, index) => (
-          <Card key={index} className="p-4 text-center hover:shadow-lg transition-shadow">
-            <CardContent className="space-y-2">
-              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full bg-muted ${stat.color}`}>
-                <stat.icon className="h-5 w-5" />
+const stationFeatures = [
+  {
+    icon: <Droplets className="h-5 w-5" />,
+    title: "Sensor Kelembaban Tanah",
+    description: "Monitoring kelembaban tanah untuk kesehatan tanaman"
+  },
+  {
+    icon: <Zap className="h-5 w-5" />,
+    title: "Sistem Penyiraman Otomatis",
+    description: "ESP32 mengontrol penyiraman berdasarkan kondisi tanah"
+  },
+  {
+    icon: <TreePine className="h-5 w-5" />,
+    title: "Monitoring Tanaman",
+    description: "Tracking kondisi dan kesehatan tanaman secara real-time"
+  },
+  {
+    icon: <BarChart3 className="h-5 w-5" />,
+    title: "Data Analytics",
+    description: "Analisis pola pertumbuhan dan kebutuhan air tanaman"
+  }
+];
+
+const technicalSpecs = {
+  robot: [
+    { spec: "Controller", value: "ESP32" },
+    { spec: "Sensor Suhu", value: "DHT22/BME280" },
+    { spec: "Sensor PM2.5", value: "PMS5003" },
+    { spec: "Sensor Gas", value: "MQ-135" },
+    { spec: "Konektivitas", value: "WiFi 802.11 b/g/n" },
+    { spec: "Update Rate", value: "Setiap beberapa detik" },
+    { spec: "Power Supply", value: "DC 5V/USB" },
+    { spec: "Database", value: "Firebase Realtime" }
+  ],
+  station: [
+    { spec: "Controller", value: "ESP32" },
+    { spec: "Sensor Kelembaban", value: "Soil Moisture Sensor" },
+    { spec: "Actuator", value: "Water Pump + Relay" },
+    { spec: "Threshold", value: "Configurable" },
+    { spec: "Konektivitas", value: "WiFi 802.11 b/g/n" },
+    { spec: "Update Rate", value: "Setiap beberapa detik" },
+    { spec: "Auto Watering", value: "Based on soil condition" },
+    { spec: "Database", value: "Firebase Realtime" }
+  ]
+};
+
+export function HowItWorks() {
+  const [activeStep, setActiveStep] = useState(1);
+  const [activeTab, setActiveTab] = useState("overview");
+
+  return (
+    <div className="space-y-12">
+      {/* Hero Section */}
+      <section className="text-center space-y-6">
+        <Badge variant="outline" className="text-lg px-4 py-2">
+          Cara Kerja GREENOVA
+        </Badge>
+        <h1 className="text-4xl md:text-6xl font-bold">
+          Teknologi Monitoring Lingkungan
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          Sistem GREENOVA menggabungkan robot dan station pintar untuk monitoring kualitas udara 
+          dan perawatan tanaman otomatis dengan teknologi ESP32, sensor IoT, dan AI predictions.
+        </p>
+      </section>
+
+      {/* System Overview */}
+      <section className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4">Sistem GREENOVA</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Dua perangkat yang bekerja secara sinergis untuk monitoring lingkungan komprehensif
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Robot */}
+          <Card className="p-6 hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-2xl">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Bot className="h-6 w-6 text-blue-600" />
+                </div>
+                GREENOVA Robot
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-muted-foreground">
+                Robot pintar untuk monitoring kualitas udara dengan multiple sensor environment
+              </p>
+
+              <div className="space-y-3">
+                <h4 className="font-semibold">Fitur Utama:</h4>
+                <div className="grid grid-cols-1 gap-3">
+                  {robotFeatures.map((feature, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                      <div className="p-1 bg-primary/10 rounded">
+                        {feature.icon}
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-sm">{feature.title}</h5>
+                        <p className="text-xs text-muted-foreground">{feature.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-1">
-                <div className="text-xl font-bold">{stat.value}</div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+
+              <div className="pt-2">
+                <Badge className="bg-blue-500">
+                  Real-time Air Quality Monitoring
+                </Badge>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {/* Main Workflow */}
-      <div className="space-y-16">
-        {steps.map((step, index) => (
-          <div key={index} className="relative">
-            {/* Desktop Layout */}
-            <div className="hidden lg:block">
-              <div className={`grid grid-cols-12 gap-8 items-center ${index % 2 === 0 ? '' : 'direction-rtl'}`}>
-                {/* Content Side */}
-                <div className={`col-span-6 space-y-6 ${index % 2 === 0 ? '' : 'order-2'}`}>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`flex items-center justify-center w-16 h-16 rounded-2xl ${step.color} text-white text-xl font-bold`}>
-                        {step.number}
+          {/* Station */}
+          <Card className="p-6 hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-2xl">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Droplets className="h-6 w-6 text-green-600" />
+                </div>
+                GREENOVA Station
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-muted-foreground">
+                Station pintar untuk monitoring dan perawatan tanaman otomatis
+              </p>
+
+              <div className="space-y-3">
+                <h4 className="font-semibold">Fitur Utama:</h4>
+                <div className="grid grid-cols-1 gap-3">
+                  {stationFeatures.map((feature, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                      <div className="p-1 bg-green-500/10 rounded">
+                        {feature.icon}
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold">{step.title}</h2>
-                        <p className="text-primary font-medium">{step.subtitle}</p>
+                        <h5 className="font-medium text-sm">{feature.title}</h5>
+                        <p className="text-xs text-muted-foreground">{feature.description}</p>
                       </div>
                     </div>
-                    <p className="text-lg text-muted-foreground leading-relaxed">
-                      {step.description}
-                    </p>
-                  </div>
-
-                  {/* Features Grid */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {step.features.map((feature, fIndex) => (
-                      <div key={fIndex} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${step.color}/10`}>
-                          <feature.icon className={`h-4 w-4 ${step.color.replace('bg-', 'text-')}`} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{feature.label}</p>
-                          <p className="text-xs text-muted-foreground">{feature.value}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Visual Side */}
-                <div className={`col-span-6 ${index % 2 === 0 ? '' : 'order-1'}`}>
-                  <Card className="p-8 bg-gradient-to-br from-muted/30 to-muted/10 border-2 border-muted hover:shadow-xl transition-all duration-300">
-                    <CardContent className="text-center space-y-6">
-                      <div className={`inline-flex items-center justify-center w-24 h-24 rounded-3xl ${step.color} text-white`}>
-                        <step.icon className="h-12 w-12" />
-                      </div>
-                      
-                      {/* Visual Workflow */}
-                      <div className="space-y-4">
-                        {step.visual === "robot-sensors" && (
-                          <div className="space-y-4">
-                            <div className="flex justify-center gap-2">
-                              {[Thermometer, Droplets, Gauge, Activity].map((Icon, i) => (
-                                <div key={i} className="flex flex-col items-center gap-2 p-3 bg-background rounded-lg shadow-sm">
-                                  <Icon className="h-6 w-6 text-blue-500" />
-                                  <div className="w-8 h-1 bg-blue-500 rounded animate-pulse"></div>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="text-sm text-muted-foreground">Data sensor real-time</div>
-                          </div>
-                        )}
-
-                        {step.visual === "data-transmission" && (
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-center gap-4">
-                              <div className="p-3 bg-background rounded-lg shadow-sm">
-                                <Bot className="h-8 w-8 text-green-500" />
-                              </div>
-                              <div className="flex gap-1">
-                                {[...Array(3)].map((_, i) => (
-                                  <div key={i} className={`w-2 h-2 rounded-full bg-green-500 animate-pulse`} style={{animationDelay: `${i * 0.2}s`}}></div>
-                                ))}
-                              </div>
-                              <div className="p-3 bg-background rounded-lg shadow-sm">
-                                <Cloud className="h-8 w-8 text-green-500" />
-                              </div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">Transmisi data aman</div>
-                          </div>
-                        )}
-
-                        {step.visual === "ai-processing" && (
-                          <div className="space-y-4">
-                            <div className="flex justify-center gap-3">
-                              <div className="p-3 bg-background rounded-lg shadow-sm">
-                                <Server className="h-6 w-6 text-purple-500" />
-                              </div>
-                              <div className="p-3 bg-background rounded-lg shadow-sm">
-                                <Database className="h-6 w-6 text-purple-500" />
-                              </div>
-                              <div className="p-3 bg-background rounded-lg shadow-sm relative">
-                                <Brain className="h-6 w-6 text-purple-500" />
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-ping"></div>
-                              </div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">AI menganalisis data</div>
-                          </div>
-                        )}
-
-                        {step.visual === "dashboard-notification" && (
-                          <div className="space-y-4">
-                            <div className="flex justify-center gap-3">
-                              <div className="p-3 bg-background rounded-lg shadow-sm">
-                                <Laptop className="h-6 w-6 text-orange-500" />
-                              </div>
-                              <div className="p-3 bg-background rounded-lg shadow-sm relative">
-                                <Smartphone className="h-6 w-6 text-orange-500" />
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
-                              </div>
-                              <div className="p-3 bg-background rounded-lg shadow-sm">
-                                <BarChart3 className="h-6 w-6 text-orange-500" />
-                              </div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">Dashboard & notifikasi real-time</div>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  ))}
                 </div>
               </div>
-            </div>
 
-            {/* Mobile Layout */}
-            <div className="lg:hidden space-y-6">
-              <Card className="p-6 bg-gradient-to-br from-muted/30 to-muted/10 border-2 border-muted">
-                <CardContent className="text-center space-y-6">
-                  <div className="flex items-center justify-center gap-4">
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${step.color} text-white font-bold`}>
-                      {step.number}
-                    </div>
-                    <div className={`flex items-center justify-center w-16 h-16 rounded-2xl ${step.color} text-white`}>
-                      <step.icon className="h-8 w-8" />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold">{step.title}</h3>
-                    <p className="text-primary font-medium">{step.subtitle}</p>
-                  </div>
-                  
-                  <p className="text-muted-foreground leading-relaxed">
-                    {step.description}
-                  </p>
+              <div className="pt-2">
+                <Badge className="bg-green-500">
+                  Automated Plant Care System
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
-                  {/* Features for Mobile */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {step.features.map((feature, fIndex) => (
-                      <div key={fIndex} className="flex items-center gap-2 p-2 bg-background rounded-lg shadow-sm">
-                        <feature.icon className={`h-4 w-4 ${step.color.replace('bg-', 'text-')}`} />
-                        <div className="text-left">
-                          <p className="text-xs font-medium">{feature.label}</p>
-                          <p className="text-xs text-muted-foreground">{feature.value}</p>
-                        </div>
+      {/* How It Works - Workflow */}
+      <section className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4">Alur Kerja Sistem</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Proses end-to-end dari pengumpulan data sensor hingga tindakan otomatis
+          </p>
+        </div>
+
+        <div className="space-y-8">
+          {workflowSteps.map((step, index) => (
+            <div key={step.id}>
+              <Card 
+                className={`cursor-pointer transition-all duration-300 ${
+                  activeStep === step.id 
+                    ? 'ring-2 ring-primary shadow-lg' 
+                    : 'hover:shadow-md'
+                }`}
+                onClick={() => setActiveStep(step.id)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-full ${
+                      activeStep === step.id ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    }`}>
+                      {step.icon}
+                    </div>
+                    
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline">Step {step.id}</Badge>
+                        <h3 className="text-xl font-semibold">{step.title}</h3>
                       </div>
-                    ))}
+                      
+                      <p className="text-muted-foreground">{step.description}</p>
+                      
+                      {activeStep === step.id && (
+                        <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                          <h4 className="font-semibold mb-2">Detail Proses:</h4>
+                          <ul className="space-y-1">
+                            {step.details.map((detail, detailIndex) => (
+                              <li key={detailIndex} className="flex items-start gap-2 text-sm">
+                                <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                <span>{detail}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        activeStep === step.id 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {step.id}
+                      </div>
+                      
+                      {index < workflowSteps.length - 1 && (
+                        <ArrowDown className="h-4 w-4 text-muted-foreground mt-2" />
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
+          ))}
+        </div>
+      </section>
 
-            {/* Arrow Connector (not for last item) */}
-            {index < steps.length - 1 && (
-              <div className="flex justify-center my-8">
-                <div className="hidden lg:block">
-                  <ArrowDown className="h-8 w-8 text-primary animate-bounce" />
-                </div>
-                <div className="lg:hidden">
-                  <ArrowDown className="h-6 w-6 text-primary animate-bounce" />
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Benefits Section */}
-      <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-3xl p-8 md:p-12 space-y-8">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl md:text-4xl font-bold">Mengapa Sistem Ini Efektif?</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Kombinasi teknologi canggih yang memberikan solusi pertanian pintar dan berkelanjutan
+      {/* Technical Specifications */}
+      <section className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4">Spesifikasi Teknis</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Detail teknis hardware dan software yang digunakan dalam sistem GREENOVA
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="robot">Robot Specs</TabsTrigger>
+            <TabsTrigger value="station">Station Specs</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="p-6 text-center">
+                <CardContent className="space-y-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                    <Cpu className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Hardware</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• ESP32 Microcontroller</li>
+                    <li>• Multiple Environmental Sensors</li>
+                    <li>• WiFi Connectivity</li>
+                    <li>• Automated Actuators</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="p-6 text-center">
+                <CardContent className="space-y-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <Database className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Database</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Firebase Realtime Database</li>
+                    <li>• Real-time Data Sync</li>
+                    <li>• Cloud Storage</li>
+                    <li>• Historical Data Archive</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="p-6 text-center">
+                <CardContent className="space-y-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                    <Brain className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold">AI & Analytics</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• TensorFlow.js Predictions</li>
+                    <li>• Machine Learning Models</li>
+                    <li>• Real-time Analysis</li>
+                    <li>• Forecasting System</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="robot">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5" />
+                  GREENOVA Robot - Technical Specifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {technicalSpecs.robot.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                      <span className="font-medium">{item.spec}</span>
+                      <span className="text-muted-foreground">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="station">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Droplets className="h-5 w-5" />
+                  GREENOVA Station - Technical Specifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {technicalSpecs.station.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                      <span className="font-medium">{item.spec}</span>
+                      <span className="text-muted-foreground">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4">Keunggulan GREENOVA</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Manfaat yang didapat dengan menggunakan sistem monitoring GREENOVA
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             {
-              icon: Zap,
-              title: "Respons Cepat",
-              description: "Sistem bereaksi dalam hitungan detik untuk memberikan solusi optimal",
-              color: "text-yellow-500"
+              icon: <TrendingUp className="h-6 w-6" />,
+              title: "Real-time Monitoring",
+              description: "Monitoring kondisi lingkungan dan tanaman secara real-time 24/7"
             },
             {
-              icon: Brain,
-              title: "AI Cerdas",
-              description: "Machine learning yang terus belajar untuk hasil yang semakin akurat",
-              color: "text-purple-500"
+              icon: <Brain className="h-6 w-6" />,
+              title: "AI-Powered Insights",
+              description: "Analisis cerdas dan prediksi untuk pengambilan keputusan yang tepat"
             },
             {
-              icon: Shield,
-              title: "Keamanan Tinggi",
-              description: "Enkripsi end-to-end melindungi semua data yang dikumpulkan",
-              color: "text-blue-500"
+              icon: <Zap className="h-6 w-6" />,
+              title: "Automated Actions",
+              description: "Sistem otomatis untuk perawatan tanaman tanpa intervensi manual"
+            },
+            {
+              icon: <Target className="h-6 w-6" />,
+              title: "Precision Monitoring",
+              description: "Sensor akurat untuk pembacaan data lingkungan yang presisi"
+            },
+            {
+              icon: <Monitor className="h-6 w-6" />,
+              title: "User-Friendly Interface",
+              description: "Dashboard yang mudah dipahami untuk semua kalangan pengguna"
+            },
+            {
+              icon: <Clock className="h-6 w-6" />,
+              title: "Historical Analysis",
+              description: "Analisis tren dan pola dari data historis untuk insights mendalam"
             }
           ].map((benefit, index) => (
             <Card key={index} className="p-6 text-center hover:shadow-lg transition-shadow">
               <CardContent className="space-y-4">
-                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted ${benefit.color}`}>
-                  <benefit.icon className="h-6 w-6" />
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+                  {benefit.icon}
                 </div>
-                <h3 className="font-semibold">{benefit.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {benefit.description}
-                </p>
+                <h3 className="text-lg font-semibold">{benefit.title}</h3>
+                <p className="text-muted-foreground text-sm">{benefit.description}</p>
               </CardContent>
             </Card>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* CTA Section */}
-      <div className="text-center space-y-6 bg-gradient-to-r from-primary to-secondary text-white rounded-2xl p-8 md:p-12">
-        <div className="space-y-4">
-          <h3 className="text-2xl md:text-3xl font-bold">Siap Merasakan Teknologi Ini?</h3>
-          <p className="text-lg opacity-90 max-w-2xl mx-auto">
-            Jelajahi dashboard interaktif dan lihat bagaimana Greenova AI dapat mengubah cara Anda bercocok tanam
+      {/* Call to Action */}
+      <section className="text-center py-16 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl">
+        <div className="space-y-6">
+          <h2 className="text-3xl font-bold">Siap Mencoba GREENOVA?</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Jelajahi dashboard real-time dan lihat bagaimana GREENOVA dapat membantu 
+            Anda memahami kondisi lingkungan dengan lebih baik.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="text-lg px-8">
+              Lihat Dashboard Live
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+            <Button size="lg" variant="outline" className="text-lg px-8">
+              Download Technical Specs
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" variant="secondary" className="text-primary font-semibold px-8">
-            <Activity className="h-5 w-5 mr-2" />
-            Lihat Dashboard
-          </Button>
-          <Button size="lg" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-            <Bot className="h-5 w-5 mr-2" />
-            Pelajari Lebih Lanjut
-          </Button>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

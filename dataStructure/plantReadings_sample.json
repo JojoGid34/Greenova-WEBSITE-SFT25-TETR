@@ -1,0 +1,16 @@
+[
+  {
+    "station_id": "greenova-station-001",
+    "timestamp": "2025-09-04T07:08:38.000Z",
+    "plant_A": {
+      "condition": "Baik",
+      "last_update": "2025-09-04T07:08:38.000Z",
+      "moisture": 75
+    },
+    "plant_B": {
+      "condition": "Buruk",
+      "last_update": "2025-09-04T07:08:38.000Z",
+      "moisture": 30
+    }
+  }
+]

@@ -1,602 +1,582 @@
-import React from 'react';
-import { Card, CardContent } from './ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
-import { ImageWithFallback } from './figma/ImageWithFallback';
-import { useFirebaseData } from '../hooks/useFirebaseData';
-import { usePrediction } from '../hooks/usePrediction'; // Import hook prediksi
 import { 
-  ArrowRight,
-  Leaf,
-  Shield,
-  Activity,
-  Users,
-  MapPin,
-  Bot,
-  Heart,
-  Lightbulb,
+  Wind, 
+  Thermometer, 
+  Droplets, 
   TreePine,
-  Wind,
-  Droplets,
-  CheckCircle2,
-  Star,
-  Globe,
-  Zap,
-  Target,
+  Bot,
+  Gauge,
+  RefreshCw,
   AlertTriangle,
+  Activity,
+  MapPin,
+  Clock,
+  Leaf,
+  ArrowRight,
+  CheckCircle,
   Info,
-  ExternalLink,
-  Loader,
-  TrendingUp,
-  ArrowDown,
   X,
+  Sparkles,
+  MessageCircle
 } from 'lucide-react';
+import { useFirebaseData } from '../hooks/useFirebaseData';
+import { usePrediction } from '../hooks/usePrediction';
 
 interface HomePageProps {
   onNavigate: (page: string) => void;
+  onAskGreenova?: (autoMessage?: string) => void;
 }
 
-const getAQIStatus = (aqi: number) => {
-  if (aqi <= 50) return { level: "Baik", color: "text-green-500", bgColor: "bg-green-500/10", recommendations: "aiGood" };
-  if (aqi <= 100) return { level: "Sedang", color: "text-yellow-500", bgColor: "bg-yellow-500/10", recommendations: "aiModerate" };
-  if (aqi <= 150) return { level: "Tidak Sehat untuk Sensitif", color: "text-orange-500", bgColor: "bg-orange-500/10", recommendations: "aiUnhealthy" };
-  return { level: "Tidak Sehat", color: "text-red-500", bgColor: "bg-red-500/10", recommendations: "aiVeryUnhealthy" };
-};
+export function HomePage({ onNavigate, onAskGreenova }: HomePageProps) {
+  const { 
+    robotData, 
+    tamanData, 
+    formatDateTime, 
+    loading, 
+    error, 
+    refreshData 
+  } = useFirebaseData();
 
-const aiRecommendations = {
-  aiGood: [
-    "🌿 Kondisi udara sangat baik! Ini adalah waktu yang tepat untuk aktivitas outdoor.",
-    "🚴‍♂️ Robot GREENOVA merekomendasikan untuk meningkatkan ventilasi dan melakukan olahraga ringan di luar ruangan.",
-    "🌱 Manfaatkan waktu ini untuk menanam lebih banyak tanaman dan membuka jendela untuk sirkulasi udara alami.",
-    "📊 Pertahankan kondisi ini dengan mengurangi penggunaan kendaraan dan mendukung program hijau."
-  ],
-  aiModerate: [
-    "⚠️ Kualitas udara sedang. Grup sensitif sebaiknya mengurangi aktivitas outdoor yang intens.",
-    "🤖 Robot GREENOVA menyarankan untuk mengaktifkan sistem filtrasi udara dalam ruangan.",
-    "🌿 Perbanyak tanaman indoor dan pastikan ventilasi rumah berfungsi optimal.",
-    "💡 Gunakan transportasi umum atau kendaraan listrik untuk mengurangi emisi tambahan."
-  ],
-  aiUnhealthy: [
-    "🚨 Udara tidak sehat untuk grup sensitif! Batasi aktivitas outdoor dan gunakan masker N95.",
-    "🏠 Robot GREENOVA merekomendasikan untuk tetap di dalam ruangan dan menggunakan air purifier.",
-    "🌱 Aktifkan semua sistem pembersih udara alami dan tutup jendela sementara.",
-    "⚡ Hindari penggunaan kendaraan pribadi dan dukung program pembersihan udara kota."
-  ],
-  aiVeryUnhealthy: [
-    "🆘 Kualitas udara sangat buruk! Hindari semua aktivitas outdoor dan gunakan perlindungan maksimal.",
-    "🔒 Robot GREENOVA menyarankan untuk mengaktifkan mode darurat pembersih udara dan tetap di dalam ruangan.",
-    "🏥 Grup berisiko tinggi harus segera mencari tempat dengan udara bersih atau fasilitas medis.",
-    "📢 Laporkan kondisi ini ke pihak berwenang dan dukung tindakan darurat pembersihan udara."
-  ]
-};
+  const { 
+    prediction, 
+    generateAutoQuestion 
+  } = usePrediction();
 
-const reasons = [
-  {
-    icon: Wind,
-    title: "Polusi Udara Meningkat",
-    description: "Kualitas udara di kota-kota besar Indonesia semakin memburuk akibat emisi kendaraan dan industri. PM2.5 mencapai level berbahaya bagi kesehatan."
-  },
-  {
-    icon: TreePine,
-    title: "Ruang Hijau Berkurang",
-    description: "Urbanisasi yang cepat mengurangi ruang hijau kota. Kita perlu solusi cerdas untuk menciptakan oasis hijau di tengah kota."
-  },
-  {
-    icon: Droplets,
-    title: "Konsumsi Air Berlebihan",
-    description: "Sistem irigasi konvensional membuang 40% air. Teknologi pintar dapat mengoptimalkan penggunaan air untuk pertanian urban."
-  },
-  {
-    icon: Activity,
-    title: "Kurangnya Monitoring Real-time",
-    description: "Pemantauan lingkungan masih manual dan tidak real-time, sehingga sulit mengambil tindakan pencegahan yang tepat waktu."
-  }
-];
+  const [showScrollNotification, setShowScrollNotification] = useState(false);
 
-const solutions = [
-  {
-    icon: Shield,
-    title: "Pembersih Udara Aktif",
-    description: "Memfilter polutan dan partikel berbahaya dari udara sekitar menggunakan sistem filtrasi canggih."
-  },
-  {
-    icon: Bot,
-    title: "Perawat Lingkungan Otomatis",
-    description: "Melakukan penyiraman, pemupukan, dan perawatan tanaman secara otomatis berdasarkan data sensor."
-  },
-  {
-    icon: Activity,
-    title: "Monitor Lingkungan Interaktif",
-    description: "Memberikan informasi real-time tentang kualitas udara, suhu, kelembaban, dan kondisi tanaman."
-  }
-];
-
-// Scroll Notification Component
-const ScrollNotification = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) => {
-  if (!isVisible) return null;
-
-  return (
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-primary text-white px-6 py-4 rounded-lg shadow-lg border border-primary/20 animate-in slide-in-from-top-2 duration-300">
-      <div className="flex items-center gap-3">
-        <ArrowDown className="h-5 w-5 animate-bounce" />
-        <span className="text-sm font-medium">
-          Scroll ke bagian bawah untuk melihat kualitas udara dan info selanjutnya
-        </span>
-        <button 
-          onClick={onClose}
-          className="ml-2 text-white/80 hover:text-white transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-};
-
-export function HomePage({ onNavigate }: HomePageProps) {
-  const { airReadings, robots, loading } = useFirebaseData();
-  
-  // Scroll notification state
-  const [showScrollNotification, setShowScrollNotification] = React.useState(false);
-  
-  // Scroll detection
-  React.useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const showNotification = scrollY < 100; // Show when near top
-      setShowScrollNotification(showNotification);
-    };
-
-    // Show notification initially after a small delay
+  useEffect(() => {
     const timer = setTimeout(() => {
       setShowScrollNotification(true);
-    }, 2000);
+    }, 3000);
 
-    window.addEventListener('scroll', handleScroll);
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, []);
-  
-  // Ambil data terakhir dari airReadings
-  const latestAirReading = airReadings[0];
-  const aqiValue = latestAirReading?.dust_pm25 ? Math.round((latestAirReading.dust_pm25 * 2.5) + (latestAirReading.gas_ppm * 0.5)) : 0;
-  const airQuality = getAQIStatus(aqiValue);
-  const recommendations = aiRecommendations[airQuality.recommendations];
-  const [currentRecommendationIndex, setCurrentRecommendationIndex] = React.useState(0);
-  const [showMoreRecommendations, setShowMoreRecommendations] = React.useState(false);
-  const selectedRecommendation = recommendations[currentRecommendationIndex];
-  
-  // Gunakan hook prediksi untuk memprediksi AQI 1 jam ke depan
-  const { value: predictedAqi, loading: predictionLoading, error: predictionError } = usePrediction(airReadings.slice(0, 50).reverse(), 'aq_number', 1);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen w-full">
-        <p className="text-muted-foreground">Memuat data...</p>
-      </div>
-    );
-  }
+  const closeScrollNotification = () => {
+    setShowScrollNotification(false);
+  };
 
-  const pm25Value = latestAirReading?.dust_pm25 || 0;
-  const pm10Value = latestAirReading?.gas_ppm || 0;
-  const temperature = latestAirReading?.temperature || 0;
-  const humidity = latestAirReading?.humidity || 0;
-  const robotOnline = robots.length;
+  // Get AQI status color and recommendation based on string status
+  const getAQIInfo = (aqiStatus: string) => {
+    const status = aqiStatus.toLowerCase();
+    
+    if (status === 'baik') return { 
+      status: 'Baik', 
+      color: '#22c55e', 
+      textColor: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      icon: '😊',
+      recommendation: 'Udara sangat bersih. Sempurna untuk aktivitas outdoor!'
+    };
+    if (status === 'sedang') return { 
+      status: 'Sedang', 
+      color: '#eab308',
+      textColor: 'text-yellow-600',
+      bgColor: 'bg-yellow-50',
+      borderColor: 'border-yellow-200',
+      icon: '😐',
+      recommendation: 'Kualitas udara masih dapat diterima untuk kebanyakan orang.'
+    };
+    // Default to 'buruk' for any other status
+    return { 
+      status: 'Buruk', 
+      color: '#ef4444',
+      textColor: 'text-red-600',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200',
+      icon: '😰',
+      recommendation: 'Hindari aktivitas outdoor. Gunakan masker saat keluar.'
+    };
+  };
+
+  const aqiInfo = robotData ? getAQIInfo(robotData.aqi_lokal) : null;
+
+  const handleAskAI = () => {
+    const autoQuestion = generateAutoQuestion();
+    if (onAskGreenova) {
+      onAskGreenova(autoQuestion);
+    } else {
+      // Fallback to navigation with stored message
+      sessionStorage.setItem('autoMessage', autoQuestion);
+      onNavigate('ask-greenova');
+    }
+  };
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-12">
       {/* Scroll Notification */}
-      <ScrollNotification 
-        isVisible={showScrollNotification} 
-        onClose={() => setShowScrollNotification(false)} 
-      />
+      {showScrollNotification && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-primary text-primary-foreground px-6 py-3 rounded-lg shadow-lg max-w-md animate-in slide-in-from-top-5">
+          <div className="flex items-center gap-3">
+            <div className="animate-bounce">
+              <ArrowRight className="h-4 w-4 rotate-90" />
+            </div>
+            <span className="text-sm">Scroll ke bawah untuk melihat kualitas udara dan info selanjutnya</span>
+            <button 
+              onClick={closeScrollNotification}
+              className="ml-2 hover:bg-white/20 rounded p-1"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
-      <section id="home" className="text-center space-y-8 py-8">
+      <section className="text-center py-16 space-y-8">
         <div className="space-y-6">
-          <Badge className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white border-0 mb-4">
-            <Leaf className="h-4 w-4 mr-2" />
-            Teknologi Lingkungan Bersih & Hijau
-          </Badge>
-          
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
-            Menumbuhkan{' '}
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Udara Bersih
-            </span>
-            <br />
-            di Daerah Anda
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+            GREENOVA AI
           </h1>
-          
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            GREENOVA AI menghadirkan robot pintar yang menggabungkan teknologi AI, IoT, dan computer vision 
-            untuk menciptakan lingkungan yang lebih bersih dan sehat melalui pertanian urban yang berkelanjutan.
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
+            Solusi Teknologi Pintar untuk Lingkungan Bersih dan Sehat
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-            <Button 
-              size="lg" 
-              className="text-lg px-8 py-4"
-              onClick={() => onNavigate('air-quality')}
-            >
-              <Wind className="h-5 w-5 mr-2" />
-              Lihat Kualitas Udara Sekitar
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="text-lg px-8 py-4"
-              onClick={() => window.open('https://www.youtube.com/watch?v=placeholder-video-id', '_blank')}
-            >
-              <Bot className="h-5 w-5 mr-2" />
-              Demo Robot
-              <ExternalLink className="h-4 w-4 ml-2" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto mt-16">
-          {[
-            { icon: Wind, number: "40%", label: "Pengurangan Polutan" },
-            { icon: Droplets, number: "60%", label: "Penghematan Air" },
-            { icon: TreePine, number: `${Math.floor(pm25Value * 2)}+`, label: "Tanaman Terpantau" },
-            { icon: Users, number: `${robotOnline}`, label: "Robot Online" }
-          ].map((stat, index) => (
-            <div key={index} className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-                <stat.icon className="h-6 w-6 text-primary" />
-              </div>
-              <div className="text-2xl font-bold">{stat.number}</div>
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Air Quality Alert - Moved here after hero section */}
-      <section id="air-quality-real-time" className="relative">
-        <Card className={`border-2 ${airQuality.bgColor} border-current`}>
-          <CardContent className="p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Icon and main content */}
-              <div className="lg:col-span-9">
-                <div className="flex items-start gap-4">
-                  <div className={`flex-shrink-0 w-12 h-12 rounded-full ${airQuality.bgColor} flex items-center justify-center`}>
-                    {aqiValue <= 50 ? (
-                      <CheckCircle2 className={`h-6 w-6 ${airQuality.color}`} />
-                    ) : aqiValue <= 100 ? (
-                      <Info className={`h-6 w-6 ${airQuality.color}`} />
-                    ) : (
-                      <AlertTriangle className={`h-6 w-6 ${airQuality.color}`} />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <h3 className="text-xl md:text-2xl font-bold mb-1">Kualitas Udara Real-time</h3>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span>Update: {latestAirReading ? new Date(latestAirReading.timestamp.seconds * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
-                        <span>•</span>
-                        <span>Kota Surabaya</span>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="text-center p-3 bg-background/50 rounded-lg">
-                        <div className="text-lg font-bold">{pm25Value > 0 ? pm25Value.toFixed(1) : 'N/A'} μg/m³</div>
-                        <div className="text-xs text-muted-foreground">PM2.5</div>
-                      </div>
-                      <div className="text-center p-3 bg-background/50 rounded-lg">
-                        <div className="text-lg font-bold">{pm10Value > 0 ? pm10Value.toFixed(1) : 'N/A'} ppm</div>
-                        <div className="text-xs text-muted-foreground">Gas</div>
-                      </div>
-                      <div className="text-center p-3 bg-background/50 rounded-lg">
-                        <div className="text-lg font-bold">{temperature > 0 ? temperature : 'N/A'}°C</div>
-                        <div className="text-xs text-muted-foreground">Suhu</div>
-                      </div>
-                      <div className="text-center p-3 bg-background/50 rounded-lg">
-                        <div className="text-lg font-bold">{humidity > 0 ? humidity : 'N/A'}%</div>
-                        <div className="text-xs text-muted-foreground">Kelembaban</div>
-                      </div>
-                    </div>
-
-                    <Alert className={`${airQuality.bgColor} border-current`}>
-                      <Bot className={`h-4 w-4 ${airQuality.color}`} />
-                      <AlertDescription className="leading-relaxed text-sm">
-                        <strong className={airQuality.color}>AI GREENOVA Merekomendasikan:</strong> {selectedRecommendation}
-                        {recommendations.length > 1 && (
-                          <div className="mt-3">
-                            {!showMoreRecommendations ? (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setShowMoreRecommendations(true)}
-                                className="text-sm"
-                              >
-                                More
-                              </Button>
-                            ) : (
-                              <div className="space-y-2">
-                                {recommendations.slice(1).map((rec, index) => (
-                                  <div key={index} className="text-sm p-2 bg-background/30 rounded">
-                                    {rec}
-                                  </div>
-                                ))}
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setShowMoreRecommendations(false)}
-                                  className="text-sm"
-                                >
-                                  Less
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-                </div>
-              </div>
-
-              {/* AQI Display */}
-              <div className="lg:col-span-3 flex flex-col items-center justify-center space-y-3">
-                <div className="text-center">
-                  <div className={`text-4xl md:text-5xl font-bold ${airQuality.color}`}>{aqiValue}</div>
-                  <div className="text-base text-muted-foreground">AQI</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-lg font-semibold ${airQuality.color}`}>{airQuality.level}</div>
-                  <div className="text-sm text-muted-foreground">Status</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <Card className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  <span className="font-medium text-sm">Prediksi AQI 1 jam ke depan:</span>
-                </div>
-                <div>
-                  {predictionLoading ? (
-                    <Loader className="h-4 w-4 animate-spin text-primary" />
-                  ) : predictionError ? (
-                    <span className="text-red-500 text-sm">N/A</span>
-                  ) : (
-                    <span className="text-lg font-bold text-primary">{predictedAqi || 'N/A'}</span>
-                  )}
-                </div>
-              </Card>
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button 
-                  onClick={() => onNavigate('air-quality')}
-                  className="text-sm"
-                  size="sm"
-                >
-                  <Activity className="h-4 w-4 mr-2" />
-                  Lihat Detail Analisis
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    sessionStorage.setItem('autoMessage', `Berdasarkan kondisi udara saat ini dengan AQI ${aqiValue} (${airQuality.level}), PM2.5: ${pm25Value} μg/m³, Gas: ${pm10Value} ppm, suhu: ${temperature}°C, dan kelembaban: ${humidity}%, apa saran terbaik yang bisa diberikan untuk memperbaiki kualitas udara dan menciptakan lingkungan yang lebih sehat?`);
-                    onNavigate('ask-greenova');
-                  }}
-                  className="text-sm"
-                  size="sm"
-                >
-                  <Bot className="h-4 w-4 mr-2" />
-                  Tanya AI untuk Saran
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Why This is Important */}
-      <section className="space-y-12">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl md:text-4xl font-bold">Why this is important for us?</h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Indonesia menghadapi tantangan lingkungan yang serius. Teknologi GREENOVA AI hadir sebagai solusi inovatif 
-            untuk menciptakan masa depan yang lebih berkelanjutan.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {reasons.map((reason, index) => (
-            <Card key={index} className="p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/20">
-                    <reason.icon className="h-6 w-6 text-red-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-2">{reason.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{reason.description}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Our Solution */}
-      <section id="solution" className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-3xl p-8 md:p-12 space-y-12">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl md:text-4xl font-bold">GREENOVA: Our Solution</h2>
-          <Badge className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white text-lg">
-            3-in-1 Solution
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Solutions List */}
-          <div className="space-y-8">
-            {solutions.map((solution, index) => (
-              <div key={index} className="flex items-start gap-4">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white dark:bg-gray-800 shadow-lg">
-                  <solution.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">{solution.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{solution.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Robot Image Placeholder */}
-          <div className="relative">
-            <Card className="p-8 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-2 border-primary/20">
-              <CardContent className="text-center space-y-6">
-                <div className="relative w-48 h-48 mx-auto bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-2xl">
-                  <Bot className="h-24 w-24 text-white" />
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full animate-pulse flex items-center justify-center">
-                    <CheckCircle2 className="h-4 w-4 text-white" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold">Robot GREENOVA AI</h3>
-                  <p className="text-muted-foreground">Dilengkapi ESP32-CAM & Teachable Machine</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-green-500" />
-                    <span>Status: Online</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-blue-500" />
-                    <span>Battery: {robots[0]?.battery || 85}%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Floating Elements */}
-            <div className="absolute -top-4 -left-4 w-16 h-16 bg-primary/20 rounded-full animate-bounce"></div>
-            <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-secondary/20 rounded-full animate-pulse"></div>
-          </div>
-        </div>
-
-        {/* How It Works CTA */}
-        <div className="text-center space-y-6 pt-8 border-t border-primary/20">
-          <h3 className="text-2xl font-semibold">Penasaran gimana cara kerjanya?</h3>
-          <Button 
-            size="lg" 
-            className="text-lg px-8 py-4"
-            onClick={() => onNavigate('how-it-works')}
-          >
-            <Lightbulb className="h-5 w-5 mr-2" />
-            Intip cara kerjanya di sini...
-            <ArrowRight className="h-5 w-5 ml-2" />
-          </Button>
-        </div>
-      </section>
-
-      {/* Feature Highlights */}
-      <section className="space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold mb-4">Mengapa Memilih GREENOVA AI?</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            {
-              icon: Star,
-              title: "Teknologi Terdepan",
-              description: "Menggunakan AI, IoT, dan Computer Vision terbaru untuk hasil optimal"
-            },
-            {
-              icon: Shield,
-              title: "Ramah Lingkungan",
-              description: "Mengurangi penggunaan air hingga 60% dan meningkatkan kualitas udara"
-            },
-            {
-              icon: Activity,
-              title: "Monitoring 24/7",
-              description: "Pemantauan real-time dengan notifikasi otomatis untuk kondisi kritis"
-            }
-          ].map((feature, index) => (
-            <Card key={index} className="p-6 text-center hover:shadow-lg transition-shadow">
-              <CardContent className="space-y-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-                  <feature.icon className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="font-semibold">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Collaboration Section */}
-      <section id="collaboration" className="bg-gradient-to-r from-primary to-secondary text-white rounded-3xl p-8 md:p-12 text-center space-y-8">
-        <div className="space-y-6">
-          <h2 className="text-3xl md:text-4xl font-bold">Mari Berkolaborasi</h2>
-          <h3 className="text-2xl md:text-3xl font-semibold opacity-90">Untuk Indonesia yang lebih bersih</h3>
-          <p className="text-lg md:text-xl opacity-90 max-w-3xl mx-auto leading-relaxed">
-            Bergabunglah dengan gerakan teknologi hijau Indonesia. Bersama-sama kita dapat menciptakan 
-            lingkungan yang lebih bersih dan sehat untuk generasi masa depan melalui inovasi teknologi pertanian berkelanjutan.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Robot GREENOVA menghadirkan monitoring kualitas udara real-time dan sistem 
+            pertanian urban berkelanjutan untuk menciptakan masa depan yang lebih hijau.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
             size="lg" 
-            variant="secondary" 
-            className="text-primary font-semibold px-8 py-4"
-            onClick={() => {
-              document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth' });
-              setTimeout(() => onNavigate('about'), 500);
-            }}
+            onClick={() => onNavigate('air-quality')}
+            className="text-lg px-8"
           >
-            <Heart className="h-5 w-5 mr-2" />
-            Hubungi Kami
+            <Wind className="h-5 w-5 mr-2" />
+            Lihat Kualitas Udara
+          </Button>
+          <Button 
+            size="lg" 
+            variant="outline" 
+            onClick={() => onNavigate('how-it-works')}
+            className="text-lg px-8"
+          >
+            <Bot className="h-5 w-5 mr-2" />
+            Cara Kerja Robot
           </Button>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-          <Button 
-            variant="outline" 
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 py-6"
-            onClick={() => onNavigate('about')}
-          >
-            <Users className="h-5 w-5 mr-2" />
-            Tentang Kami
+      {/* Real-time Data Overview */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {/* Robot Status */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Status Robot</p>
+                <p className="text-2xl font-bold">
+                  {loading ? 'Loading...' : robotData?.isOnline ? 'Online' : 'Offline'}
+                </p>
+                {robotData && (
+                  <Badge className={robotData.isOnline ? 'bg-green-500' : 'bg-red-500'}>
+                    {robotData.isOnline ? 'Aktif' : 'Tidak Aktif'}
+                  </Badge>
+                )}
+              </div>
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                <Bot className={`h-6 w-6 ${robotData?.isOnline ? 'text-green-500' : 'text-red-500'}`} />
+              </div>
+            </div>
+            {robotData && (
+              <div className="mt-4 flex items-center gap-2 text-sm">
+                <div className={`w-2 h-2 rounded-full ${robotData.isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                <span className="text-muted-foreground">
+                  Update: {formatDateTime(robotData.terakhir_update)}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Air Quality Status */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Kualitas Udara</p>
+                <p className="text-2xl font-bold">
+                  {loading ? 'Loading...' : robotData ? robotData.aqi_lokal : 'N/A'}
+                </p>
+                {robotData && aqiInfo && (
+                  <Badge style={{ backgroundColor: aqiInfo.color }} className="text-white">
+                    {aqiInfo.status}
+                  </Badge>
+                )}
+              </div>
+              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                <Wind className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dust Level */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Debu PM2.5</p>
+                <p className="text-2xl font-bold">
+                  {loading ? 'Loading...' : robotData ? `${robotData.debu}` : 'N/A'}
+                </p>
+                <p className="text-xs text-muted-foreground">μg/m³</p>
+              </div>
+              <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 rounded-full flex items-center justify-center">
+                <Wind className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Gas Level */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Gas</p>
+                <p className="text-2xl font-bold">
+                  {loading ? 'Loading...' : robotData ? `${robotData.gas}` : 'N/A'}
+                </p>
+                <p className="text-xs text-muted-foreground">ppm</p>
+              </div>
+              <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                <Gauge className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Temperature */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Suhu Udara</p>
+                <p className="text-2xl font-bold">
+                  {loading ? 'Loading...' : robotData ? `${robotData.suhu}°C` : 'N/A'}
+                </p>
+                {robotData && (
+                  <Badge className={`mt-2 ${
+                    robotData.suhu >= 20 && robotData.suhu <= 30 ? 'bg-green-500' :
+                    robotData.suhu >= 15 && robotData.suhu <= 35 ? 'bg-yellow-500' : 'bg-red-500'
+                  } text-white`}>
+                    {robotData.suhu >= 20 && robotData.suhu <= 30 ? 'Optimal' :
+                     robotData.suhu >= 15 && robotData.suhu <= 35 ? 'Normal' : 'Ekstrem'}
+                  </Badge>
+                )}
+              </div>
+              <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                <Thermometer className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* AI Recommendations Section */}
+      {prediction?.ai_recommendation && (
+        <section className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-2">
+              <Sparkles className="h-8 w-8 text-primary" />
+              Rekomendasi AI GREENOVA
+            </h2>
+            <p className="text-muted-foreground">
+              Saran dan rekomendasi berdasarkan analisis data sensor real-time
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <Wind className="h-5 w-5" />
+                  Saran Lingkungan
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-relaxed">{prediction.ai_recommendation.environmental_advice}</p>
+                {prediction.ai_recommendation.safety_warning && (
+                  <Alert className="mt-4 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20">
+                    <AlertTriangle className="h-4 w-4 text-orange-600" />
+                    <AlertDescription className="text-orange-700 dark:text-orange-200">
+                      {prediction.ai_recommendation.safety_warning}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <TreePine className="h-5 w-5" />
+                  Tips Perawatan Tanaman
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-relaxed">{prediction.ai_recommendation.plant_care_tips}</p>
+                <div className="mt-4 p-3 bg-primary/10 rounded-lg">
+                  <p className="text-sm font-medium text-primary">Tindakan yang Diperlukan:</p>
+                  <p className="text-sm mt-1">{prediction.ai_recommendation.action_required}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center">
+            <Button 
+              onClick={handleAskAI}
+              size="lg"
+              className="text-lg px-8"
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Tanya AI Untuk Saran Lebih Detail
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* Air Quality Section */}
+      {robotData && aqiInfo && (
+        <section className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4">Kualitas Udara Saat Ini</h2>
+            <p className="text-muted-foreground">
+              Monitoring real-time kualitas udara dengan teknologi GREENOVA
+            </p>
+          </div>
+
+          <Card className={`${"bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 border-primary/20"} ${aqiInfo.borderColor} border-2`}>
+            <CardContent className="p-8">
+              <div className="text-center space-y-6">
+                <div className="flex items-center justify-center gap-6">
+                  <div 
+                    className="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold"
+                    style={{ 
+                      backgroundColor: aqiInfo.color + '20', 
+                      color: aqiInfo.color,
+                      border: `3px solid ${aqiInfo.color}40`
+                    }}
+                  >
+                    {aqiInfo.icon}
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-3xl font-bold mb-2">Status Kualitas Udara</h3>
+                    <div className="flex items-center gap-3">
+                      <Badge 
+                        className="text-white text-lg px-4 py-2"
+                        style={{ backgroundColor: aqiInfo.color }}
+                      >
+                        {aqiInfo.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <Alert className={`${aqiInfo.bgColor} ${aqiInfo.borderColor}`}>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className={aqiInfo.textColor}>
+                    <strong>Rekomendasi:</strong> {aqiInfo.recommendation}
+                  </AlertDescription>
+                </Alert>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-card/50 border border-border rounded-lg">
+                    <Wind className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">PM2.5</p>
+                    <p className="text-xl font-bold">{robotData.debu} μg/m³</p>
+                  </div>
+                  <div className="text-center p-4 bg-card/50 border border-border rounded-lg">
+                    <Gauge className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Gas</p>
+                    <p className="text-xl font-bold">{robotData.gas} ppm</p>
+                  </div>
+                  <div className="text-center p-4 bg-card/50 border border-border rounded-lg">
+                    <Activity className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Distance</p>
+                    <p className="text-xl font-bold">{robotData.jarak} cm</p>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={() => onNavigate('air-quality')}
+                  className="text-lg px-8"
+                >
+                  Lihat Analisis Lengkap
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      {/* Plant Monitoring Section */}
+      {tamanData && tamanData.plants.length > 0 && (
+        <section className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4">Monitoring Tanaman</h2>
+            <p className="text-muted-foreground">
+              Sistem pemantauan tanaman otomatis dengan sensor kelembaban tanah
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {tamanData.plants.map((plant, index) => {
+              const getConditionColor = (kondisi: string) => {
+                switch (kondisi.toLowerCase()) {
+                  case 'baik': return 'bg-green-500';
+                  case 'sedang': return 'bg-yellow-500';
+                  case 'buruk': return 'bg-red-500';
+                  default: return 'bg-gray-500';
+                }
+              };
+
+              return (
+                <Card key={index} className="hover:shadow-lg transition-all hover:scale-105">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Leaf className="h-5 w-5 text-green-600" />
+                      {plant.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Kelembaban:</span>
+                      <span className="text-2xl font-bold">{plant.kelembaban}%</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Kondisi:</span>
+                      <Badge className={`${getConditionColor(plant.kondisi)} text-white`}>
+                        {plant.kondisi}
+                      </Badge>
+                    </div>
+
+                    {plant.terakhir_siram && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Terakhir Siram:</span>
+                        <span className="text-sm font-medium">
+                          {formatDateTime(plant.terakhir_siram)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Kelembaban Tanah</span>
+                        <span>{plant.kelembaban}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                        <div 
+                          className={`h-3 rounded-full transition-all duration-300 ${
+                            plant.kelembaban >= 60 ? 'bg-green-500' :
+                            plant.kelembaban >= 30 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.max(0, plant.kelembaban))}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Features Section */}
+      <section className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4">Fitur GREENOVA</h2>
+          <p className="text-muted-foreground">
+            Teknologi canggih untuk monitoring lingkungan dan pertanian berkelanjutan
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card className="hover:shadow-lg transition-all hover:scale-105">
+            <CardContent className="p-6 text-center">
+              <Wind className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Monitor Kualitas Udara</h3>
+              <p className="text-muted-foreground">
+                Pemantauan real-time PM2.5, gas berbahaya, dan kualitas udara dengan sensor presisi tinggi.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-all hover:scale-105">
+            <CardContent className="p-6 text-center">
+              <TreePine className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Pertanian Pintar</h3>
+              <p className="text-muted-foreground">
+                Sistem monitoring kelembaban tanah dan kondisi tanaman dengan teknologi IoT.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-all hover:scale-105">
+            <CardContent className="p-6 text-center">
+              <Bot className="h-12 w-12 text-purple-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">AI Assistant</h3>
+              <p className="text-muted-foreground">
+                Chatbot AI yang membantu memberikan informasi dan rekomendasi lingkungan.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Error State */}
+      {error && (
+        <section className="text-center py-8">
+          <Alert className="max-w-md mx-auto">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Terjadi kesalahan saat memuat data: {error}
+            </AlertDescription>
+          </Alert>
+          <Button onClick={refreshData} className="mt-4">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Coba Lagi
           </Button>
-          <Button 
-            variant="outline" 
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 py-6"
-            onClick={() => {
-              onNavigate('support');
-              setTimeout(() => {
-                document.getElementById('collaboration-section')?.scrollIntoView({ behavior: 'smooth' });
-              }, 500);
-            }}
-          >
-            <Target className="h-5 w-5 mr-2" />
-            Kolaborasi
-          </Button>
-          <Button 
-            variant="outline" 
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 py-6"
-            onClick={() => onNavigate('support')}
-          >
-            <Heart className="h-5 w-5 mr-2" />
-            Donasi
-          </Button>
+        </section>
+      )}
+
+      {/* CTA Section */}
+      <section className="text-center py-16 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl border border-border">
+        <div className="space-y-6">
+          <h2 className="text-3xl font-bold">Mulai Monitoring Lingkungan Anda</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Bergabunglah dengan revolusi teknologi hijau. Pantau kualitas udara dan 
+            kelola pertanian urban dengan teknologi GREENOVA yang canggih.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              size="lg" 
+              onClick={() => onNavigate('air-quality')}
+              className="text-lg px-8"
+            >
+              Mulai Monitoring
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              onClick={() => onNavigate('about')}
+              className="text-lg px-8"
+            >
+              Pelajari Lebih Lanjut
+            </Button>
+          </div>
         </div>
       </section>
     </div>

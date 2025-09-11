@@ -1,57 +1,38 @@
 import React, { useState } from "react";
 import { Layout } from "./components/Layout";
-import { LoginPage } from "./components/LoginPage";
-import { AdminLayout } from "./components/AdminLayout";
-import { Dashboard } from "./components/Dashboard";
 import { AskGreenova } from "./components/AskGreenova";
 import { AirQualityAnalysis } from "./components/AirQualityAnalysis";
-
 import { HowItWorks } from "./components/HowItWorks";
-import { History } from "./components/History";
 import { Education } from "./components/Education";
 import { About } from "./components/About";
 import { Support } from "./components/Support";
-import { Settings } from "./components/Settings";
 import { BackButton } from "./components/BackButton";
 import { FloatingRobotButton } from "./components/FloatingRobotButton";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { PlantsQuality } from "./components/PlantsQuality";
-import { StationDashboard } from "./components/StationDashboard";
 import { HomePage } from "./components/HomePage";
+import { DatabaseDebugger } from "./components/DatabaseDebugger";
+import { LocationSettings } from "./components/LocationSettings";
 import { useFirebaseData } from './hooks/useFirebaseData';
-
-interface UserInfo {
-  username: string;
-  email: string;
-}
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("home");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  // Ambil data dari Firebase
-  const { robots, stations, airReadings, plantReadings, loading } = useFirebaseData();
-  
-  // Atur ID default setelah data dimuat
-  const [selectedRobotId, setSelectedRobotId] = useState<string>('');
-  const [selectedStationId, setSelectedStationId] = useState<string>('');
+  // Ambil data dari Firebase Realtime Database
+  const { robotData, tamanData, loading, error: firebaseError } = useFirebaseData();
 
   React.useEffect(() => {
     if (!loading) {
       setIsLoading(false);
-      // Atur ID default jika data tersedia
-      if (robots.length > 0 && !selectedRobotId) {
-        setSelectedRobotId(robots[0].robot_id);
-      }
-      if (stations.length > 0 && !selectedStationId) {
-        setSelectedStationId(stations[0].station_id);
+      if (firebaseError) {
+        console.warn('Firebase connection issue, but app will continue with mock data:', firebaseError);
+        // Don't set as critical error since we have fallback data
       }
     }
-  }, [loading, robots, stations]);
+  }, [loading, firebaseError]);
 
   const handleNavigate = (page: string) => {
     try {
@@ -74,101 +55,17 @@ export default function App() {
     }
   };
 
-  const handleLogin = (userData: UserInfo) => {
-    setIsAuthenticated(true);
-    setUserInfo(userData);
-    setCurrentPage("admin-dashboard");
-  };
-
-  const handleUserUpdate = (newUserInfo: UserInfo) => {
-    setUserInfo(newUserInfo);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUserInfo(null);
-    setCurrentPage("home");
-  };
-
-  const handleShowLogin = () => {
-    setCurrentPage("login");
-  };
-
-  const handleRobotSelect = (robotId: string) => {
-    setSelectedRobotId(robotId);
-  };
-
-  const handleStationSelect = (stationId: string) => {
-    setSelectedStationId(stationId);
-  };
-
   // Show loading screen
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  // Render admin pages with admin layout
-  const renderAdminPage = () => {
-    if (!isAuthenticated || !userInfo) return null;
-    
-    let adminContent;
-    switch (currentPage) {
-      case "admin-dashboard":
-        adminContent = selectedRobotId ? <Dashboard selectedRobotId={selectedRobotId} onRobotSelect={handleRobotSelect} /> : null;
-        break;
-      case "admin-station-dashboard":
-        adminContent = selectedStationId ? <StationDashboard selectedStationId={selectedStationId} onStationSelect={handleStationSelect} /> : null;
-        break;
-      case "admin-history":
-        adminContent = selectedRobotId ? <History selectedRobotId={selectedRobotId} onRobotSelect={handleRobotSelect} /> : null;
-        break;
-      case "admin-settings":
-        adminContent = selectedRobotId ? <Settings selectedRobotId={selectedRobotId} onRobotSelect={handleRobotSelect} /> : null;
-        break;
-      default:
-        adminContent = selectedRobotId ? <Dashboard selectedRobotId={selectedRobotId} onRobotSelect={handleRobotSelect} /> : null;
-        break;
-    }
-
-    return (
-      <AdminLayout
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        onLogout={handleLogout}
-        userInfo={userInfo}
-        onUserUpdate={handleUserUpdate}
-        selectedRobotId={selectedRobotId}
-        onRobotSelect={handleRobotSelect}
-        selectedStationId={selectedStationId}
-        onStationSelect={handleStationSelect}
-      >
-        {adminContent}
-      </AdminLayout>
-    );
-  };
-
   const renderCurrentPage = () => {
     try {
-      // Show login page
-      if (currentPage === "login") {
-        return (
-          <LoginPage
-            onLogin={handleLogin}
-            onBack={handleBackToHome}
-            onNavigate={handleNavigate}
-          />
-        );
-      }
-
-      // Show admin pages if authenticated
-      if (isAuthenticated && currentPage.startsWith("admin-")) {
-        return renderAdminPage();
-      }
-
       // Public pages
       switch (currentPage) {
         case "home":
-          return <HomePage onNavigate={handleNavigate} />;
+          return <HomePage onNavigate={handleNavigate} onAskGreenova={handleAskGreenova} />;
         case "ask-greenova":
           return (
             <div className="space-y-4">
@@ -219,8 +116,15 @@ export default function App() {
               <Support />
             </div>
           );
+        case "location-settings":
+          return (
+            <div className="space-y-4">
+              <BackButton onClick={handleBackToHome} />
+              <LocationSettings />
+            </div>
+          );
         default:
-          return <HomePage onNavigate={handleNavigate} />;
+          return <HomePage onNavigate={handleNavigate} onAskGreenova={handleAskGreenova} />;
       }
     } catch (err) {
       setError(err as Error);
@@ -231,21 +135,15 @@ export default function App() {
   return (
     <ErrorBoundary error={error}>
       <div className="min-h-screen bg-background text-foreground">
-        {currentPage === "login" || (isAuthenticated && currentPage.startsWith("admin-")) ? (
-          renderCurrentPage()
-        ) : (
-          <>
-            <Layout
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              onLogin={handleShowLogin}
-            >
-              {renderCurrentPage()}
-            </Layout>
-            
-            <FloatingRobotButton onClick={handleAskGreenova} />
-          </>
-        )}
+        <Layout
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        >
+          {renderCurrentPage()}
+        </Layout>
+        
+        <FloatingRobotButton onClick={handleAskGreenova} />
+        <DatabaseDebugger />
       </div>
     </ErrorBoundary>
   );
