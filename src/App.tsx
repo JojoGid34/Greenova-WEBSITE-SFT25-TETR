@@ -14,6 +14,7 @@ import { PlantsQuality } from "./components/PlantsQuality";
 import { HomePage } from "./components/HomePage";
 import { DatabaseDebugger } from "./components/DatabaseDebugger";
 import { LocationSettings } from "./components/LocationSettings";
+import { AdminPage } from "./components/AdminPage";
 import { useFirebaseData } from './hooks/useFirebaseData';
 
 export default function App() {
@@ -33,6 +34,21 @@ export default function App() {
       }
     }
   }, [loading, firebaseError]);
+
+  // Cleanup effect to prevent memory leaks
+  React.useEffect(() => {
+    return () => {
+      // Cleanup PredictionService on unmount to prevent TensorFlow memory leaks
+      try {
+        const { PredictionService } = require('./services/predictionService');
+        const predictionService = PredictionService.getInstance();
+        predictionService.dispose();
+      } catch (error) {
+        // Ignore errors during cleanup
+        console.warn('Cleanup warning:', error);
+      }
+    };
+  }, []);
 
   const handleNavigate = (page: string) => {
     try {
@@ -123,6 +139,8 @@ export default function App() {
               <LocationSettings />
             </div>
           );
+        case "admin":
+          return <AdminPage />;
         default:
           return <HomePage onNavigate={handleNavigate} onAskGreenova={handleAskGreenova} />;
       }

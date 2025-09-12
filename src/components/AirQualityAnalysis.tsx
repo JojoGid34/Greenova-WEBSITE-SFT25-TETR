@@ -17,10 +17,12 @@ import {
   Activity
 } from 'lucide-react';
 import { useFirebaseData } from '../hooks/useFirebaseData';
+import { PredictionCard } from './PredictionCard';
 
 export function AirQualityAnalysis() {
   const { 
     robotData, 
+    tamanData,
     formatDateTime, 
     loading, 
     error, 
@@ -317,6 +319,23 @@ export function AirQualityAnalysis() {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Prediction Section */}
+      {robotData && tamanData && (
+        <PredictionCard 
+          type="air-quality"
+          robotData={{
+            pm25: robotData.debu,
+            gas: robotData.gas,
+            temperature: robotData.suhu,
+            humidity: robotData.kelembaban
+          }}
+          plantData={{
+            plantA: tamanData.A?.kelembaban || 0,
+            plantB: tamanData.B?.kelembaban || 0
+          }}
+        />
+      )}
 
       {/* Information Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -111,14 +111,7 @@ export class FirebaseRealtimeService {
           jarak: 15,
           debu: 25,
           gas: 0.5,
-          terakhir_update: new Date().toLocaleString('id-ID', {
-            day: '2-digit',
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3'),
+          terakhir_update: formatDateConsistent(new Date()),
           aqi_lokal: "Baik"
         };
         console.log('📊 Mock robot data provided:', mockData);
@@ -175,34 +168,13 @@ export class FirebaseRealtimeService {
           A: {
             kelembaban: 75,
             kondisi: "Baik",
-            terakhir_siram: new Date(Date.now() - 2 * 60 * 60 * 1000).toLocaleString('id-ID', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit'
-            }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3'),
-            terakhir_update: new Date().toLocaleString('id-ID', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit'
-            }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3')
+            terakhir_siram: formatDateConsistent(new Date(Date.now() - 2 * 60 * 60 * 1000)),
+            terakhir_update: formatDateConsistent(new Date())
           },
           B: {
             kelembaban: 68,
             kondisi: "Baik",
-            terakhir_update: new Date().toLocaleString('id-ID', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit'
-            }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3')
+            terakhir_update: formatDateConsistent(new Date())
           }
         };
         console.log('🌱 Mock taman data provided:', mockData);
@@ -284,14 +256,7 @@ export class FirebaseRealtimeService {
           debu: Math.random() * 50,
           gas: Math.random() * 2,
           aqi_lokal: 30 + Math.random() * 40,
-          terakhir_update: timestamp.toLocaleString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3'),
+          terakhir_update: formatDateConsistent(timestamp),
           timestamp: timestamp.toISOString()
         });
       }
@@ -338,35 +303,14 @@ export class FirebaseRealtimeService {
           A: {
             kelembaban: moistureA,
             kondisi: moistureA > 60 ? "Baik" : moistureA > 30 ? "Sedang" : "Buruk",
-            terakhir_update: timestamp.toLocaleString('id-ID', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit'
-            }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3')
+            terakhir_update: formatDateConsistent(timestamp)
           },
           B: {
             kelembaban: moistureB,
             kondisi: moistureB > 60 ? "Baik" : moistureB > 30 ? "Sedang" : "Buruk",
-            terakhir_update: timestamp.toLocaleString('id-ID', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit'
-            }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3')
+            terakhir_update: formatDateConsistent(timestamp)
           },
-          timestamp: timestamp.toLocaleString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3')
+          timestamp: formatDateConsistent(timestamp)
         });
       }
       
@@ -446,14 +390,7 @@ export class FirebaseRealtimeService {
       await set(robotRef, {
         ...await this.getCurrentRobotData(),
         ...data,
-        terakhir_update: new Date().toLocaleString('id-ID', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3')
+        terakhir_update: formatDateConsistent(new Date())
       });
     } catch (error) {
       console.error('Error updating robot data:', error);
@@ -470,14 +407,7 @@ export class FirebaseRealtimeService {
       await set(plantRef, {
         ...currentPlantData,
         ...data,
-        terakhir_update: new Date().toLocaleString('id-ID', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3')
+        terakhir_update: formatDateConsistent(new Date())
       });
     } catch (error) {
       console.error('Error updating plant data:', error);
@@ -497,12 +427,10 @@ export class FirebaseRealtimeService {
       // Handle numeric input (timestamp in seconds or milliseconds)
       if (typeof dateInput === 'number') {
         // If the number is small (like 86), it might be seconds since some epoch
-        // Or it could be minutes/hours. Let's treat small numbers as relative time.
         if (dateInput < 1000000) {
           // Treat as seconds ago from now
           const now = new Date();
           const date = new Date(now.getTime() - (dateInput * 1000));
-          console.log(`Parsed numeric date ${dateInput} as ${dateInput} seconds ago:`, date);
           return date;
         } else if (dateInput < 10000000000) {
           // Treat as Unix timestamp in seconds
@@ -513,64 +441,13 @@ export class FirebaseRealtimeService {
         }
       }
 
-      // Handle string input
-      if (typeof dateInput !== 'string') {
-        console.warn('Invalid date input type provided to parseDate:', typeof dateInput, dateInput);
-        return new Date(); // Return current date as fallback
+      // Handle string input - use the new utility function
+      if (typeof dateInput === 'string') {
+        return parseDateString(dateInput);
       }
 
-      // Try to parse as ISO string first
-      const isoDate = new Date(dateInput);
-      if (!isNaN(isoDate.getTime())) {
-        return isoDate;
-      }
-
-      // Parse custom formats: "10-09-2025 22:12:17" or "12-09-2025, 06.59.17"
-      let datePart, timePart;
-      
-      // Handle comma-separated format: "12-09-2025, 06.59.17"
-      if (dateInput.includes(', ')) {
-        const parts = dateInput.split(', ');
-        if (parts.length !== 2) {
-          throw new Error(`Invalid date format: ${dateInput}`);
-        }
-        [datePart, timePart] = parts;
-        // Replace dots with colons for time part
-        timePart = timePart.replace(/\./g, ':');
-      } else {
-        // Handle space-separated format: "10-09-2025 22:12:17"
-        const parts = dateInput.split(' ');
-        if (parts.length !== 2) {
-          throw new Error(`Invalid date format: ${dateInput}`);
-        }
-        [datePart, timePart] = parts;
-      }
-
-      const dateParts = datePart.split('-');
-      const timeParts = timePart.split(':');
-
-      if (dateParts.length !== 3 || timeParts.length !== 3) {
-        throw new Error(`Invalid date/time format: ${dateInput}`);
-      }
-
-      const [day, month, year] = dateParts;
-      const [hour, minute, second] = timeParts;
-      
-      const parsedDate = new Date(
-        parseInt(year),
-        parseInt(month) - 1, // Month is 0-indexed
-        parseInt(day),
-        parseInt(hour),
-        parseInt(minute),
-        parseInt(second)
-      );
-
-      // Check if the parsed date is valid
-      if (isNaN(parsedDate.getTime())) {
-        throw new Error(`Invalid date values: ${dateInput}`);
-      }
-
-      return parsedDate;
+      console.warn('Invalid date input type provided to parseDate:', typeof dateInput, dateInput);
+      return new Date(); // Return current date as fallback
     } catch (error) {
       console.error('Error parsing date input:', dateInput, error);
       return new Date(); // Return current date as fallback
@@ -581,49 +458,52 @@ export class FirebaseRealtimeService {
     return formatDateConsistent(date);
   }
 
-  formatDateOld(date: Date | undefined | null): string {
-    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-      console.warn('Invalid date provided to formatDate:', date);
-      return new Date().toLocaleString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3');
-    }
-
+  // Enhanced AQI calculation that considers both PM2.5 (dust) and gas levels with temperature/humidity factors
+  calculateAQI(pm25: number, gas: number, temp?: number, humidity?: number): number {
     try {
-      return date.toLocaleString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3');
-    } catch (error) {
-      console.error('Error formatting date:', date, error);
-      return new Date().toLocaleString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1-$2-$3');
-    }
-  }
+      // Base AQI calculation using PM2.5 as primary factor
+      let baseAQI = 0;
+      
+      // PM2.5 AQI calculation (primary factor)
+      if (pm25 <= 12.0) {
+        baseAQI = Math.round((pm25 / 12.0) * 50);
+      } else if (pm25 <= 35.5) {
+        baseAQI = Math.round(51 + ((pm25 - 12.1) / (35.5 - 12.1)) * 49);
+      } else if (pm25 <= 55.4) {
+        baseAQI = Math.round(101 + ((pm25 - 35.5) / (55.4 - 35.5)) * 49);
+      } else if (pm25 <= 150.4) {
+        baseAQI = Math.round(151 + ((pm25 - 55.5) / (150.4 - 55.5)) * 49);
+      } else if (pm25 <= 250.4) {
+        baseAQI = Math.round(201 + ((pm25 - 150.5) / (250.4 - 150.5)) * 99);
+      } else {
+        baseAQI = Math.round(301 + ((pm25 - 250.5) / (350.4 - 250.5)) * 99);
+      }
 
-  calculateAQI(pm25: number, gas: number): number {
-    // Simple AQI calculation based on PM2.5 and gas levels
-    if (pm25 <= 12.0 && gas <= 50) return Math.round((pm25 / 12.0) * 50);
-    if (pm25 <= 35.5 && gas <= 100) return Math.round(51 + ((pm25 - 12.1) / (35.5 - 12.1)) * 49);
-    if (pm25 <= 55.4 && gas <= 150) return Math.round(101 + ((pm25 - 35.5) / (55.4 - 35.5)) * 49);
-    if (pm25 <= 150.4 && gas <= 200) return Math.round(151 + ((pm25 - 55.5) / (150.4 - 55.5)) * 49);
-    if (pm25 <= 250.4 && gas <= 300) return Math.round(201 + ((pm25 - 150.5) / (250.4 - 150.5)) * 99);
-    return Math.round(301 + ((pm25 - 250.5) / (350.4 - 250.5)) * 99);
+      // Gas level adjustment (secondary factor)
+      let gasAdjustment = 0;
+      if (gas > 1.0) {
+        gasAdjustment = Math.min(gas * 10, 50); // Cap gas adjustment at 50 points
+      }
+
+      // Environmental factors adjustment
+      let environmentalAdjustment = 0;
+      if (temp !== undefined && humidity !== undefined) {
+        // High temperature and low humidity can worsen air quality perception
+        if (temp > 30 && humidity < 40) {
+          environmentalAdjustment += 5;
+        }
+        // Very high humidity can also affect air quality
+        if (humidity > 80) {
+          environmentalAdjustment += 3;
+        }
+      }
+
+      const finalAQI = Math.min(baseAQI + gasAdjustment + environmentalAdjustment, 500); // Cap at 500
+      return Math.round(finalAQI);
+    } catch (error) {
+      console.error('Error calculating AQI:', error);
+      return 50; // Return safe default value
+    }
   }
 
   getAQIStatus(aqi: number): string {

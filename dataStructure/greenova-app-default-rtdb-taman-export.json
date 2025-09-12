@@ -1,0 +1,14 @@
+{
+  "A": {
+    "kelembaban": 0,
+    "kondisi": "Buruk",
+    "terakhir_siram": "13-09-2025 09:46:48",
+    "terakhir_update": "13-09-2025 09:46:50"
+  },
+  "B": {
+    "kelembaban": 100,
+    "kondisi": "Baik",
+    "terakhir_siram": "12-09-2025 09:29:12",
+    "terakhir_update": "11-09-2025 09:46:50"
+  }
+}

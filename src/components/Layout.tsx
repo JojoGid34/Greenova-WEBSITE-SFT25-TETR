@@ -12,7 +12,9 @@ import {
   Cog,
   Wind,
   MapPin,
-  MessageCircle
+  MessageCircle,
+  Leaf,
+  Shield
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useTheme } from './ui/use-theme';
@@ -27,11 +29,13 @@ const navigationItems = [
   { id: 'home', icon: Home, label: 'Home' },
   { id: 'ask-greenova', icon: MessageCircle, label: 'Ask GREENOVA' },
   { id: 'air-quality', icon: Wind, label: 'Air Quality' },
+  { id: 'plants-quality', icon: Leaf, label: 'Plants Quality' },
   { id: 'how-it-works', icon: Cog, label: 'How It Works' },
   { id: 'education', icon: BookOpen, label: 'Edukasi' },
   { id: 'location-settings', icon: MapPin, label: 'Pengaturan Lokasi' },
   { id: 'about', icon: Info, label: 'About' },
   { id: 'support', icon: Heart, label: 'Support' },
+  { id: 'admin', icon: Shield, label: 'Admin Panel' },
 ];
 
 export function Layout({ children, currentPage, onPageChange }: LayoutProps) {
