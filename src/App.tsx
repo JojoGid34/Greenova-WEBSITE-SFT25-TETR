@@ -12,7 +12,7 @@ import { LoadingScreen } from "./components/LoadingScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { PlantsQuality } from "./components/PlantsQuality";
 import { HomePage } from "./components/HomePage";
-import { DatabaseDebugger } from "./components/DatabaseDebugger";
+
 import { LocationSettings } from "./components/LocationSettings";
 import { AdminPage } from "./components/AdminPage";
 import { useFirebaseData } from './hooks/useFirebaseData';
@@ -64,11 +64,9 @@ export default function App() {
 
   const handleAskGreenova = (autoMessage?: string) => {
     setCurrentPage("ask-greenova");
-    // Jika ada pesan otomatis, akan dikirim ke AskGreenova component
-    if (autoMessage) {
-      // Store message untuk dikirim otomatis
-      sessionStorage.setItem('autoMessage', autoMessage);
-    }
+    // Store default greeting message for floating button
+    const messageToSend = autoMessage || 'Halo';
+    sessionStorage.setItem('autoMessage', messageToSend);
   };
 
   // Show loading screen
@@ -160,8 +158,7 @@ export default function App() {
           {renderCurrentPage()}
         </Layout>
         
-        <FloatingRobotButton onClick={handleAskGreenova} />
-        <DatabaseDebugger />
+        <FloatingRobotButton onClick={() => handleAskGreenova()} />
       </div>
     </ErrorBoundary>
   );

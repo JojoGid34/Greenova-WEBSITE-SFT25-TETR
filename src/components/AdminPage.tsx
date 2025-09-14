@@ -42,6 +42,7 @@ import {
   Leaf
 } from 'lucide-react';
 import { useFirebaseData } from '../hooks/useFirebaseData';
+import { DatabaseDebugger } from './DatabaseDebugger';
 
 export function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -74,7 +75,7 @@ export function AdminPage() {
     e.preventDefault();
     
     // Simple authentication (in production, use proper authentication)
-    if (username === 'admin' && password === 'greenova2025-tetr') {
+    if (username === 'admin' && password === 'greenova-tetr-2025') {
       setIsLoggedIn(true);
       setLoginError('');
       localStorage.setItem('greenova_admin_session', 'logged_in');
@@ -164,7 +165,7 @@ export function AdminPage() {
                 Username: <code className="bg-background px-1 rounded">admin</code>
               </p>
               <p className="text-sm text-muted-foreground">
-                Password: <code className="bg-background px-1 rounded">greenova2025-tetr</code>
+                Password: <code className="bg-background px-1 rounded">greenova2024</code>
               </p>
             </div>
           </CardContent>
@@ -563,6 +564,16 @@ export function AdminPage() {
                       className="w-24"
                     />
                   </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Database Debug Tools */}
+              <div className="space-y-4">
+                <h4 className="font-semibold">Database Debug Tools</h4>
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <DatabaseDebugger />
                 </div>
               </div>
 

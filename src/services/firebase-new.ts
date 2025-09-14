@@ -1,6 +1,4 @@
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, off, get, set, push, serverTimestamp, connectDatabaseEmulator } from 'firebase/database';
-import { formatDateConsistent, parseDateString } from '../utils/dateUtils';
+
 
 // Firebase configuration - you can replace this with your actual config
 const firebaseConfig = {

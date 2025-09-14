@@ -518,7 +518,7 @@ export function Education() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <TrendingUp className="h-8 w-8 text-blue-600 mx-auto mb-2" />
                   <h4 className="font-semibold">Prediksi Kualitas Udara</h4>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -526,7 +526,7 @@ export function Education() {
                   </p>
                 </div>
                 
-                <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <Droplets className="h-8 w-8 text-green-600 mx-auto mb-2" />
                   <h4 className="font-semibold">Prediksi Penyiraman</h4>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -534,7 +534,7 @@ export function Education() {
                   </p>
                 </div>
                 
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                   <Target className="h-8 w-8 text-purple-600 mx-auto mb-2" />
                   <h4 className="font-semibold">Rekomendasi AI</h4>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -719,7 +719,7 @@ export function Education() {
       </section>
 
       {/* Call to Action */}
-      <section className="text-center py-16 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl">
+      <section className="text-center py-16 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl">
         <div className="space-y-6">
           <h2 className="text-3xl font-bold">Mulai Eksplorasi GREENOVA</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
