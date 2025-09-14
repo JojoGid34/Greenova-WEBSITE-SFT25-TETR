@@ -165,7 +165,7 @@ export function AdminPage() {
                 Username: <code className="bg-background px-1 rounded">admin</code>
               </p>
               <p className="text-sm text-muted-foreground">
-                Password: <code className="bg-background px-1 rounded">greenova2024</code>
+                Password: <code className="bg-background px-1 rounded">greenova-tetr-2025</code>
               </p>
             </div>
           </CardContent>
